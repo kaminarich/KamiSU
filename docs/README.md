@@ -2,16 +2,16 @@
   <img src="https://github.com/RapliVx/KernelSU/blob/master/docs/mambo.jpg?raw=true" 
        width="100%" 
        style="border-radius: 15px;" 
-       alt="Mambo Banner" />
+       alt="KamiSU Banner" />
        
-  <h1>KernelSU (Rapli's Fork)</h1>
+  <h1>KamiSU</h1>
   
   <p>
-    <a href="https://github.com/raplivx/KernelSU/actions/workflows/build-manager.yml"><img src="https://github.com/raplivx/KernelSU/actions/workflows/build-manager.yml/badge.svg" alt="Build Manager"></a>
-    <a href="https://github.com/raplivx/KernelSU/blob/main/LICENSE"><img src="https://img.shields.io/github/license/raplivx/KernelSU" alt="License"></a>
+    <a href="https://github.com/kaminarich/KamiSU/actions/workflows/build-manager.yml"><img src="https://github.com/kaminarich/KamiSU/actions/workflows/build-manager.yml/badge.svg" alt="Build Manager"></a>
+    <a href="https://github.com/kaminarich/KamiSU/blob/master/LICENSE"><img src="https://img.shields.io/github/license/kaminarich/KamiSU" alt="License"></a>
   </p>
   
-  <p>A Kernel-based root solution for Android devices.</p>
+  <p>A Kernel-based root solution for Android devices (Forked from RapliVx/KOWSU).</p>
 </div>
 
 <div align="center">
@@ -19,7 +19,7 @@
 > [!NOTE]
 > Official KernelSU support for Non-GKI kernels has been ended.
 >
-> This is unofficial KernelSU fork, all changes are not guaranteed stable!
+> This is **KamiSU** (Unofficial Fork), all changes are not guaranteed stable!
 >
 > All rights reserved to [@tiann](https://github.com/tiann), the author of KernelSU.
 
@@ -27,7 +27,7 @@
 
 ## Introduction
 
-KernelSU is a kernel-based root solution for Android GKI devices. It works in kernel mode and grants root permission to userspace applications directly in kernel space.
+KamiSU is a kernel-based root solution for Android GKI devices. It works in kernel mode and grants root permission to userspace applications directly in kernel space.
 
 ## Features
 
@@ -35,21 +35,12 @@ KernelSU is a kernel-based root solution for Android GKI devices. It works in ke
 2. Module system based on [Metamodule](https://kernelsu.org/guide/metamodule.html)
 3. [App Profile](https://kernelsu.org/guide/app-profile.html): Lock up the root power in a cage.
 
-## How to add MamboSU kernel driver into your kernel source
+## How to add KamiSU kernel driver into your kernel source
 
-- **main branch**
-```
-curl -LSs "https://raw.githubusercontent.com/RapliVx/KernelSU/refs/heads/master/kernel/setup.sh" | bash -s master
-```
-
-- **susfs branch**
-
-> [!WARNING]
-> This branch is not always updated.
->
+**main branch**
 
 ```
-curl -LSs "https://raw.githubusercontent.com/RapliVx/KernelSU/refs/heads/susfs-rksu-master/kernel/setup.sh" | bash -s susfs-rksu-master
+curl -LSs "[https://raw.githubusercontent.com/kaminarich/KamiSU/master/kernel/setup.sh](https://raw.githubusercontent.com/kaminarich/KamiSU/master/kernel/setup.sh)" | bash -s master
 ```
 
 
@@ -102,3 +93,4 @@ For information on reporting security vulnerabilities in KernelSU, see [SECURITY
 - [Diamorphine](https://github.com/m0nad/Diamorphine): some rootkit skills.
 - [simonpunk](https://gitlab.com/simonpunk): susfs add-on.
 - [rifsxd](https://github.com/rifsxd): UI Design
+- [RapliVx](https://github.com/RapliVx): Original MamboSU maintainer.
