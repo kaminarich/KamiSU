@@ -78,13 +78,13 @@ subprojects {
             defaultConfig {
                 minSdk = androidMinSdkVersion
                 
-                // --- BAGIAN INI DIMODIFIKASI UNTUK KAMISU ---
+            
                 if (this is ApplicationDefaultConfig) {
                     targetSdk = androidTargetSdkVersion
                     versionCode = managerVersionCode
                     versionName = managerVersionName
                     
-                    // Ganti Package Name (Application ID) disini
+                    // Ganti Package Name
                     applicationId = "com.kamisu.manager" 
                 }
                 // ---------------------------------------------
