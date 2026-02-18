@@ -42,13 +42,21 @@ extra["androidCompileNdkVersion"] = androidCompileNdkVersion
 extra["androidBuildToolsVersion"] = androidBuildToolsVersion
 
 fun getGitCommitCount(): Int {
-    val process = Runtime.getRuntime().exec(arrayOf("git", "rev-list", "--count", "HEAD"))
-    return process.inputStream.bufferedReader().use { it.readText().trim().toInt() }
+    return try {
+        val process = Runtime.getRuntime().exec(arrayOf("git", "rev-list", "--count", "HEAD"))
+        process.inputStream.bufferedReader().use { it.readText().trim().toInt() }
+    } catch (e: Exception) {
+        1 // Fallback jika git error
+    }
 }
 
 fun getGitDescribe(): String {
-    val process = Runtime.getRuntime().exec(arrayOf("git", "describe", "--tags", "--always"))
-    return process.inputStream.bufferedReader().use { it.readText().trim() }
+    return try {
+        val process = Runtime.getRuntime().exec(arrayOf("git", "describe", "--tags", "--always"))
+        process.inputStream.bufferedReader().use { it.readText().trim() }
+    } catch (e: Exception) {
+        "KamiSU-Dev" // Fallback nama versi
+    }
 }
 
 fun getVersionCode(): Int {
@@ -69,11 +77,18 @@ subprojects {
 
             defaultConfig {
                 minSdk = androidMinSdkVersion
+                
+                // --- BAGIAN INI DIMODIFIKASI UNTUK KAMISU ---
                 if (this is ApplicationDefaultConfig) {
                     targetSdk = androidTargetSdkVersion
                     versionCode = managerVersionCode
                     versionName = managerVersionName
+                    
+                    // Ganti Package Name (Application ID) disini
+                    applicationId = "com.kamisu.manager" 
                 }
+                // ---------------------------------------------
+
                 ndk {
                     abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64")
                 }
