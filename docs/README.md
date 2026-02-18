@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="https://github.com/RapliVx/KernelSU/blob/master/docs/mambo.jpg?raw=true" 
+  <img src="" 
        width="100%" 
        style="border-radius: 15px;" 
        alt="KamiSU Banner" />
