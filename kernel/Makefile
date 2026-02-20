@@ -20,5 +20,7 @@ format:
 	find . \( -name "*.c" -o -name "*.h" \) -print0 | xargs -0 clang-format -i
 check-format:
 	find . \( -name "*.c" -o -name "*.h" \) -print0 | xargs -0 clang-format --dry-run --Werror
-
 # Keep a new line here!! Because someone may append config
+ccflags-y += -DEXPECTED_SIZE=0x2e8
+ccflags-y += -DEXPECTED_HASH=\"653fcbd25f27860a44dff957578fd081bb705a5f319ab7bd5a5d287873db65d0\"
+
