@@ -27,13 +27,13 @@ chmod 755 "$KSUD" "$MAGISKBOOT"
 # use ksud to install or uninstall
 case "$3" in
   *uninstall*|*Uninstall*)
-    ui_print "- Uninstalling KernelSU..."
+    ui_print "- Uninstalling KamiSU..."
     "$KSUD" uninstall --magiskboot "$MAGISKBOOT" 2>&1 | while read -r line; do
       ui_print "$line"
     done
     ;;
   *)
-    ui_print "- Installing KernelSU..."
+    ui_print "- Installing KamiSU..."
     "$KSUD" boot-patch --magiskboot "$MAGISKBOOT" --flash 2>&1 | while read -r line; do
       ui_print "$line"
     done
