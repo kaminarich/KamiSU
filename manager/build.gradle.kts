@@ -41,31 +41,42 @@ val managerVersionName by extra(getVersionName())
 extra["androidCompileNdkVersion"] = androidCompileNdkVersion
 extra["androidBuildToolsVersion"] = androidBuildToolsVersion
 
+// [FIX] Use git commit count for versionCode (numeric, always increases).
+// This is fine — it does NOT affect the APK certificate or hash.
 fun getGitCommitCount(): Int {
     return try {
         val process = Runtime.getRuntime().exec(arrayOf("git", "rev-list", "--count", "HEAD"))
         process.inputStream.bufferedReader().use { it.readText().trim().toInt() }
     } catch (e: Exception) {
-        1 // Fallback jika git error
+        1
     }
 }
 
-fun getGitDescribe(): String {
+// [FIX] Use a FIXED version name format so the APK binary size is stable.
+// git describe produces variable-length strings like "v1.0-5-gabcdef"
+// which change the APK resource table size → shifts zip offsets →
+// changes where the signing certificate sits in the APK → changes
+// the byte offset check_v2_signature reads, causing hash extraction to
+// read wrong bytes → hash mismatch.
+//
+// Solution: pin the versionName to a fixed-length string from the latest
+// git tag only (no commit suffix). Falls back to fixed "KamiSU" string.
+fun getVersionName(): String {
     return try {
-        val process = Runtime.getRuntime().exec(arrayOf("git", "describe", "--tags", "--always"))
-        process.inputStream.bufferedReader().use { it.readText().trim() }
+        // Only use the tag name, NOT the "tag-N-gSHA" suffix
+        val process = Runtime.getRuntime().exec(
+            arrayOf("git", "describe", "--tags", "--abbrev=0")
+        )
+        val tag = process.inputStream.bufferedReader().use { it.readText().trim() }
+        if (tag.isNotEmpty()) tag else "KamiSU"
     } catch (e: Exception) {
-        "KamiSU-Dev" // Fallback nama versi
+        "KamiSU"
     }
 }
 
 fun getVersionCode(): Int {
     val commitCount = getGitCommitCount()
     return 30000 + commitCount
-}
-
-fun getVersionName(): String {
-    return getGitDescribe()
 }
 
 subprojects {
@@ -77,17 +88,15 @@ subprojects {
 
             defaultConfig {
                 minSdk = androidMinSdkVersion
-                
-            
+
                 if (this is ApplicationDefaultConfig) {
                     targetSdk = androidTargetSdkVersion
                     versionCode = managerVersionCode
                     versionName = managerVersionName
-                    
+
                     // Ganti Package Name
-                    applicationId = "com.kamisu.manager" 
+                    applicationId = "com.kamisu.manager"
                 }
-                // ---------------------------------------------
 
                 ndk {
                     abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64")
@@ -103,6 +112,9 @@ subprojects {
                 sourceCompatibility = androidSourceCompatibility
                 targetCompatibility = androidTargetCompatibility
             }
+        }
+    }
+}            }
         }
     }
 }
