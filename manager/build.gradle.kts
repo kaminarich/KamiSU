@@ -41,8 +41,6 @@ val managerVersionName by extra(getVersionName())
 extra["androidCompileNdkVersion"] = androidCompileNdkVersion
 extra["androidBuildToolsVersion"] = androidBuildToolsVersion
 
-// [FIX] Use git commit count for versionCode (numeric, always increases).
-// This is fine — it does NOT affect the APK certificate or hash.
 fun getGitCommitCount(): Int {
     return try {
         val process = Runtime.getRuntime().exec(arrayOf("git", "rev-list", "--count", "HEAD"))
@@ -52,18 +50,15 @@ fun getGitCommitCount(): Int {
     }
 }
 
-// [FIX] Use a FIXED version name format so the APK binary size is stable.
-// git describe produces variable-length strings like "v1.0-5-gabcdef"
-// which change the APK resource table size → shifts zip offsets →
-// changes where the signing certificate sits in the APK → changes
-// the byte offset check_v2_signature reads, causing hash extraction to
-// read wrong bytes → hash mismatch.
-//
-// Solution: pin the versionName to a fixed-length string from the latest
-// git tag only (no commit suffix). Falls back to fixed "KamiSU" string.
+// [FIX] Use --abbrev=0 to get only the tag name, NOT "tag-N-gSHA".
+// The variable-length commit suffix from plain "git describe" changes the
+// versionName string length each commit → changes APK resource table size
+// → shifts ZIP byte offsets → check_v2_signature reads certificate at
+// wrong offset → EXPECTED_SIZE mismatches → hash extraction fails.
+// With --abbrev=0, versionName = "v1.0" every build until you push a new tag.
+// versionCode (numeric) is fine to change — it does NOT affect APK cert offset.
 fun getVersionName(): String {
     return try {
-        // Only use the tag name, NOT the "tag-N-gSHA" suffix
         val process = Runtime.getRuntime().exec(
             arrayOf("git", "describe", "--tags", "--abbrev=0")
         )
@@ -94,7 +89,7 @@ subprojects {
                     versionCode = managerVersionCode
                     versionName = managerVersionName
 
-                    // Ganti Package Name
+                    // App package name
                     applicationId = "com.kamisu.manager"
                 }
 
@@ -112,9 +107,6 @@ subprojects {
                 sourceCompatibility = androidSourceCompatibility
                 targetCompatibility = androidTargetCompatibility
             }
-        }
-    }
-}            }
         }
     }
 }
