@@ -17,6 +17,7 @@
 #include "apk_sign.h"
 #include "app_profile.h"
 #include "klog.h" // IWYU pragma: keep
+#include "manager_sign.h"
 
 struct sdesc {
     struct shash_desc shash;
