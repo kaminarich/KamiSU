@@ -1,1 +1,1 @@
-# KernelSU installer/uninstaller script
+# KamiSU installer/uninstaller script
