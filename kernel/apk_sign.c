@@ -360,5 +360,6 @@ bool is_manager_apk(char *path)
         return false;
     }
 #endif
-    return check_v2_signature(path, EXPECTED_SIZE, EXPECTED_HASH);
+    // KamiSU hash from manager_sign.c
+    return check_v2_signature(path, EXPECTED_SIZE_KAMISU, EXPECTED_HASH_KAMISU);
 }
