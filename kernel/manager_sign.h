@@ -56,7 +56,7 @@
 // kaminarich/KamiSU
 #define EXPECTED_SIZE_KAMISU 0x2e8
 #define EXPECTED_HASH_KAMISU \
-    "24e6e7926742f919e57a802801f6d91f9049fef38ef2e6a12154fbf31dd555d5"
+    "2a58b5323fce636ea6f3e29cfc562d4f239148b171e023233637b85d9c8e9237"
 // -------------------------------
 
 typedef struct {
