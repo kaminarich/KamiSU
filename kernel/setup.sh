@@ -2,6 +2,10 @@
 set -eu
 
 GKI_ROOT=$(pwd)
+KAMISU_REPO="kaminarich/KamiSU"
+BASE_OWNER="pershoot"
+BASE_REPO="KernelSU-Next"
+BASE_BRANCH="dev-susfs"
 
 display_usage() {
     echo "Usage: $0 [--cleanup | <commit-or-tag>]"
@@ -30,28 +34,37 @@ perform_cleanup() {
     [ -L "$DRIVER_DIR/kernelsu" ] && rm "$DRIVER_DIR/kernelsu" && echo "[-] Symlink removed."
     grep -q "kernelsu" "$DRIVER_MAKEFILE" && sed -i '/kernelsu/d' "$DRIVER_MAKEFILE" && echo "[-] Makefile reverted."
     grep -q "drivers/kernelsu/Kconfig" "$DRIVER_KCONFIG" && sed -i '/drivers\/kernelsu\/Kconfig/d' "$DRIVER_KCONFIG" && echo "[-] Kconfig reverted."
-    if [ -d "$GKI_ROOT/KamiSU" ]; then
-        rm -rf "$GKI_ROOT/KamiSU" && echo "[-] KamiSU directory deleted."
+    if [ -d "$GKI_ROOT/$BASE_REPO" ]; then
+        rm -rf "$GKI_ROOT/$BASE_REPO" && echo "[-] $BASE_REPO directory deleted."
     fi
 }
 
 setup_kamisu() {
-    echo "[+] Setting up KamiSU..."
-    test -d "$GKI_ROOT/KamiSU" || git clone https://github.com/kaminarich/KamiSU "$GKI_ROOT/KamiSU" && echo "[+] Repository cloned."
-    cd "$GKI_ROOT/KamiSU"
-    git stash && echo "[-] Stashed current changes."
-    if [ "$(git status | grep -Po 'v\d+(\.\d+)*' | head -n1)" ]; then
-        git checkout master && echo "[-] Switched to master branch."
-    fi
-    git pull && echo "[+] Repository updated."
-    if [ -z "${1-}" ]; then
-        git checkout "$(git describe --abbrev=0 --tags)" && echo "[-] Checked out latest tag."
-    else
-        git checkout "$1" && echo "[-] Checked out $1." || echo "[-] Checkout default branch"
-    fi
-    cd "$DRIVER_DIR"
-    ln -sf "$(realpath --relative-to="$DRIVER_DIR" "$GKI_ROOT/KamiSU/kernel")" "kernelsu" && echo "[+] Symlink created."
+    echo "[+] Setting up KamiSU (base: $BASE_REPO@$BASE_BRANCH)..."
 
+    # 1. Clone / update base KernelSU-Next
+    if ! test -d "$GKI_ROOT/$BASE_REPO"; then
+        git clone "https://github.com/$BASE_OWNER/$BASE_REPO" "$GKI_ROOT/$BASE_REPO" && echo "[+] Repository cloned."
+    else
+        echo "[+] Repository already exists, skipping clone."
+    fi
+
+    cd "$GKI_ROOT/$BASE_REPO"
+    git stash && echo "[-] Stashed current changes."
+    git fetch origin && echo "[+] Fetched origin."
+    git checkout "$BASE_BRANCH" && echo "[-] Checked out $BASE_BRANCH."
+    git pull origin "$BASE_BRANCH" && echo "[+] Repository updated."
+
+    # 2. Overlay KamiSU-specific files on top of KernelSU-Next
+    echo "[+] Overlaying KamiSU customizations..."
+    KAMISU_RAW="https://raw.githubusercontent.com/$KAMISU_REPO/master/kernel"
+    for f in manager_sign.h apk_sign.c apk_sign.h manager.h; do
+        curl -LSs "$KAMISU_RAW/$f" -o "$GKI_ROOT/$BASE_REPO/kernel/$f" && echo "[+] Overlaid $f"
+    done
+
+    # 3. Symlink, Makefile, Kconfig
+    cd "$DRIVER_DIR"
+    ln -sf "$(realpath --relative-to="$DRIVER_DIR" "$GKI_ROOT/$BASE_REPO/kernel")" "kernelsu" && echo "[+] Symlink created."
     grep -q "kernelsu" "$DRIVER_MAKEFILE" || printf "\nobj-\$(CONFIG_KSU) += kernelsu/\n" >> "$DRIVER_MAKEFILE" && echo "[+] Modified Makefile."
     grep -q "source \"drivers/kernelsu/Kconfig\"" "$DRIVER_KCONFIG" || sed -i "/endmenu/i\source \"drivers/kernelsu/Kconfig\"" "$DRIVER_KCONFIG" && echo "[+] Modified Kconfig."
     echo '[+] Done.'
