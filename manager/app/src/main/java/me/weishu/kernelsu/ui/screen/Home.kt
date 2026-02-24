@@ -101,7 +101,14 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.animation.core.VisibilityThreshold
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.fillMaxHeight
+import android.content.Intent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.foundation.layout.windowInsetsPadding
 import me.weishu.kernelsu.ui.util.getHeaderImage
+import me.weishu.kernelsu.ui.util.saveHeaderImage
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import coil.ImageLoader
@@ -127,57 +134,85 @@ import me.weishu.kernelsu.ui.util.rootAvailable
 fun HomeScreen(navigator: DestinationsNavigator) {
     val context = LocalContext.current
     val kernelVersion = getKernelVersion()
-    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
+
+    val isManager = Natives.isManager
+    val ksuVersion = if (isManager) Natives.version else null
+    val lkmMode = ksuVersion?.let {
+        if (kernelVersion.isGKI()) Natives.isLkmMode else null
+    }
+    val fullFeatured = isManager && !Natives.requireNewKernel() && rootAvailable()
+
+    var headerImageUri by rememberSaveable { mutableStateOf(context.getHeaderImage()) }
+    val imagePicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) {
+            context.contentResolver.takePersistableUriPermission(
+                uri, Intent.FLAG_GRANT_READ_URI_PERMISSION
+            )
+            context.saveHeaderImage(uri.toString())
+            headerImageUri = uri.toString()
+        }
+    }
 
     Scaffold(
-        topBar = { TopBar(scrollBehavior = scrollBehavior) },
-        contentWindowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
+        contentWindowInsets = WindowInsets(0)
     ) { innerPadding ->
         Column(
             modifier = Modifier
-                .padding(innerPadding)
-                .nestedScroll(scrollBehavior.nestedScrollConnection)
                 .verticalScroll(rememberScrollState())
-                .padding(start = 16.dp, end = 16.dp, top = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(bottom = innerPadding.calculateBottomPadding())
         ) {
-            val isManager = Natives.isManager
-            val ksuVersion = if (isManager) Natives.version else null
-            val lkmMode = ksuVersion?.let {
-                if (kernelVersion.isGKI()) Natives.isLkmMode else null
-            }
-            val fullFeatured = isManager && !Natives.requireNewKernel() && rootAvailable()
-
-            StatusCard(
-                kernelVersion,
-                ksuVersion,
-                lkmMode,
-                fullFeatured,
-                useClassicLayout = context.getLayoutStyle(),
-                onClickInstall = { navigator.navigate(InstallScreenDestination) },
-                onClickSuperuser = {
-                    navigator.navigate(SuperUserScreenDestination) {
-                        popUpTo(NavGraphs.root) {
-                            saveState = true
-                        }
-                        launchSingleTop = true
-                        restoreState = true
-                    }
-                },
-                onclickModule = {
-                    navigator.navigate(ModuleScreenDestination) {
-                        popUpTo(NavGraphs.root) {
-                            saveState = true
-                        }
-                        launchSingleTop = true
-                        restoreState = true
-                    }
-                }
+            HomeBannerSection(
+                ksuVersion = ksuVersion,
+                lkmMode = lkmMode,
+                headerImageUri = headerImageUri,
+                onEditClick = { imagePicker.launch(arrayOf("image/*")) },
+                onClickInstall = { navigator.navigate(InstallScreenDestination) }
             )
-//            if (ksuVersion != null && !Natives.isLkmMode) {
-//                WarningCard(stringResource(id = R.string.home_gki_warning))
-//            }
+            HomeSystemInfoCard(
+                context = context,
+                lkmMode = lkmMode,
+                ksuVersion = ksuVersion
+            )
+            Spacer(Modifier.height(16.dp))
+            if (fullFeatured) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    HomeCountCard(
+                        title = stringResource(R.string.superuser),
+                        count = getSuperuserCount().toString(),
+                        onClick = {
+                            navigator.navigate(SuperUserScreenDestination) {
+                                popUpTo(NavGraphs.root) { saveState = true }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        },
+                        modifier = Modifier.weight(1f),
+                        elevated = false
+                    )
+                    HomeCountCard(
+                        title = stringResource(R.string.module),
+                        count = getModuleCount().toString(),
+                        onClick = {
+                            navigator.navigate(ModuleScreenDestination) {
+                                popUpTo(NavGraphs.root) { saveState = true }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        },
+                        modifier = Modifier.weight(1f),
+                        elevated = true
+                    )
+                }
+            }
             if (isManager && Natives.requireNewKernel()) {
+                Spacer(Modifier.height(16.dp))
                 WarningCard(
                     stringResource(id = R.string.require_kernel_version).format(
                         ksuVersion, Natives.MINIMAL_SUPPORTED_KERNEL
@@ -185,20 +220,10 @@ fun HomeScreen(navigator: DestinationsNavigator) {
                 )
             }
             if (ksuVersion != null && !rootAvailable()) {
-                WarningCard(
-                    stringResource(id = R.string.grant_root_failed)
-                )
+                Spacer(Modifier.height(16.dp))
+                WarningCard(stringResource(id = R.string.grant_root_failed))
             }
-//            val checkUpdate =
-//                LocalContext.current.getSharedPreferences("settings", Context.MODE_PRIVATE)
-//                    .getBoolean("check_update", true)
-//            if (checkUpdate) {
-//                UpdateCard()
-//            }
-            InfoCard()
-            DonateCard()
-            LearnMoreCard()
-            Spacer(Modifier)
+            Spacer(Modifier.height(16.dp))
         }
     }
 }
@@ -270,39 +295,30 @@ private fun TopBar(
 }
 
 @Composable
-private fun StatusCard(
-    kernelVersion: KernelVersion,
+private fun HomeBannerSection(
     ksuVersion: Int?,
     lkmMode: Boolean?,
-    fullFeatured: Boolean?,
-    useClassicLayout: Boolean,
-    onClickInstall: () -> Unit = {},
-    onClickSuperuser: () -> Unit = {},
-    onclickModule: () -> Unit = {},
+    headerImageUri: String?,
+    onEditClick: () -> Unit,
+    onClickInstall: () -> Unit
 ) {
     val context = LocalContext.current
     val cs = MaterialTheme.colorScheme
 
-    // --- LOGIC TEXT & DATA ---
     val workingMode = when (lkmMode) {
         null -> "LEGACY"
         true -> "LKM"
         else -> "GKI"
     }
-
-    val versionText = when {
-        ksuVersion != null -> "Version: $ksuVersion - $workingMode"
-        kernelVersion.isGKI() -> stringResource(R.string.home_click_to_install)
-        else -> stringResource(R.string.home_unsupported)
-    }
-
     val statusText = if (ksuVersion != null)
         stringResource(R.string.home_working)
     else
         stringResource(R.string.home_not_installed)
+    val versionText = when {
+        ksuVersion != null -> "Version: $ksuVersion - $workingMode"
+        else -> stringResource(R.string.home_click_to_install)
+    }
 
-    // --- IMAGE LOADER ---
-    val headerImageUri = context.getHeaderImage()
     val imageLoader = remember(context) {
         ImageLoader.Builder(context)
             .components {
@@ -315,193 +331,202 @@ private fun StatusCard(
             .build()
     }
 
-    // --- HEADER CARD CONTENT ---
-    val headerCardContent = @Composable { modifier: Modifier ->
-        TonalCard(
-            containerColor = Color.Transparent,
-            modifier = modifier.clip(RoundedCornerShape(28.dp))
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clickable { onClickInstall() }
-            ) {
-                // Background Image
-                if (headerImageUri != null) {
-                    AsyncImage(
-                        model = ImageRequest.Builder(context)
-                            .data(headerImageUri)
-                            .crossfade(true)
-                            .build(),
-                        imageLoader = imageLoader,
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.matchParentSize()
-                    )
-                } else {
-                    Image(
-                        painter = painterResource(R.drawable.header_bg),
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.matchParentSize()
-                    )
-                }
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(280.dp)
+            .clip(RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp))
+            .clickable { onClickInstall() }
+    ) {
+        if (headerImageUri != null) {
+            AsyncImage(
+                model = ImageRequest.Builder(context)
+                    .data(headerImageUri)
+                    .crossfade(true)
+                    .build(),
+                imageLoader = imageLoader,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.matchParentSize()
+            )
+        } else {
+            Image(
+                painter = painterResource(R.drawable.header_bg),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.matchParentSize()
+            )
+        }
 
-                // Gradient Overlay
-                Box(
-                    modifier = Modifier
-                        .matchParentSize()
-                        .background(
-                            Brush.verticalGradient(
-                                listOf(Color.Transparent, cs.surface.copy(alpha = 0.8f))
-                            )
-                        )
+        // Gradient overlay
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .background(
+                    Brush.verticalGradient(
+                        listOf(Color.Transparent, cs.surface.copy(alpha = 0.8f))
+                    )
                 )
+        )
 
-                // Content Overlay
-                if (useClassicLayout) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(24.dp),
-                        verticalArrangement = Arrangement.Bottom,
-                        horizontalAlignment = Alignment.Start
-                    ) {
-                        Box(modifier = Modifier.clip(RoundedCornerShape(50))) {
-                            Box(modifier = Modifier.matchParentSize().blur(16.dp).background(cs.secondaryContainer.copy(alpha = 0.6f)))
-                            Text(
-                                text = statusText,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = cs.onSecondaryContainer,
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                            )
-                        }
-                        Spacer(Modifier.height(8.dp))
-                        Box(modifier = Modifier.clip(RoundedCornerShape(50))) {
-                            Box(modifier = Modifier.matchParentSize().blur(16.dp).background(cs.secondaryContainer.copy(alpha = 0.6f)))
-                            Text(
-                                text = versionText,
-                                style = MaterialTheme.typography.labelMedium,
-                                color = cs.onSecondaryContainer,
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                            )
-                        }
-                    }
-                } else {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(16.dp),
-                        verticalArrangement = Arrangement.Bottom,
-                        horizontalAlignment = Alignment.Start
-                    ) {
-                        Box(modifier = Modifier.clip(RoundedCornerShape(50))) {
-                            Box(modifier = Modifier.matchParentSize().blur(16.dp).background(cs.secondaryContainer.copy(alpha = 0.6f)))
-                            Text(
-                                text = statusText,
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = cs.onSecondaryContainer,
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Box(modifier = Modifier.clip(RoundedCornerShape(50))) {
-                            Box(modifier = Modifier.matchParentSize().blur(16.dp).background(cs.secondaryContainer.copy(alpha = 0.6f)))
-                            Text(
-                                text = versionText,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = cs.onSecondaryContainer,
-                                maxLines = 1,
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                            )
-                        }
-                    }
-                }
+        // Edit icon at top-right
+        IconButton(
+            onClick = onEditClick,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top))
+                .padding(8.dp)
+                .size(40.dp)
+                .background(Color.Black.copy(alpha = 0.35f), shape = RoundedCornerShape(50))
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Edit,
+                contentDescription = stringResource(R.string.home_change_banner),
+                tint = Color.White
+            )
+        }
+
+        // Status and version text at bottom-left
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(24.dp)
+        ) {
+            Box(modifier = Modifier.clip(RoundedCornerShape(50))) {
+                Box(modifier = Modifier.matchParentSize().blur(16.dp).background(cs.secondaryContainer.copy(alpha = 0.6f)))
+                Text(
+                    text = statusText,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = cs.onSecondaryContainer,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                )
+            }
+            Spacer(Modifier.height(8.dp))
+            Box(modifier = Modifier.clip(RoundedCornerShape(50))) {
+                Box(modifier = Modifier.matchParentSize().blur(16.dp).background(cs.secondaryContainer.copy(alpha = 0.6f)))
+                Text(
+                    text = versionText,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = cs.onSecondaryContainer,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                )
             }
         }
     }
+}
 
-    val statsCardsContent = @Composable { modifier: Modifier, isVertical: Boolean ->
-        if (fullFeatured == true) {
-            @Composable
-            fun StatInfoCard(title: String, count: String, onClick: () -> Unit, itemModifier: Modifier) {
-                TonalCard(modifier = itemModifier) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onClick() }
-                            .padding(horizontal = 24.dp, vertical = 16.dp)
-                    ) {
-                        Text(
-                            text = title,
-                            style = MaterialTheme.typography.bodyLarge
-                        )
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            text = count,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = cs.onSurfaceVariant
-                        )
-                    }
-                }
+@Composable
+private fun HomeSystemInfoCard(
+    context: Context,
+    lkmMode: Boolean?,
+    ksuVersion: Int?
+) {
+    val cs = MaterialTheme.colorScheme
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(topStart = 0.dp, topEnd = 0.dp, bottomStart = 24.dp, bottomEnd = 24.dp),
+        colors = CardDefaults.cardColors()
+    ) {
+        Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+            val managerVersion = getManagerVersion(context)
+            HomeInfoRow(
+                icon = Icons.Filled.AutoAwesomeMotion,
+                label = stringResource(R.string.home_manager_version),
+                value = "${managerVersion.first} (${managerVersion.second})"
+            )
+            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+            val uname = Os.uname()
+            HomeInfoRow(
+                icon = Icons.Filled.Memory,
+                label = stringResource(R.string.home_kernel),
+                value = uname.release
+            )
+            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+            val hookMethod = when (lkmMode) {
+                null -> "LEGACY"
+                true -> "LKM"
+                else -> "GKI"
             }
-
-            if (isVertical) {
-                Column(
-                    modifier = modifier,
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    StatInfoCard(
-                        title = stringResource(R.string.superuser),
-                        count = getSuperuserCount().toString(),
-                        onClick = onClickSuperuser,
-                        itemModifier = Modifier.weight(1f) // Fill width handled by Column
-                    )
-                    StatInfoCard(
-                        title = stringResource(R.string.module),
-                        count = getModuleCount().toString(),
-                        onClick = onclickModule,
-                        itemModifier = Modifier.weight(1f)
-                    )
-                }
-            } else {
-                Row(
-                    modifier = modifier,
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    StatInfoCard(
-                        title = stringResource(R.string.superuser),
-                        count = getSuperuserCount().toString(),
-                        onClick = onClickSuperuser,
-                        itemModifier = Modifier.weight(1f)
-                    )
-                    StatInfoCard(
-                        title = stringResource(R.string.module),
-                        count = getModuleCount().toString(),
-                        onClick = onclickModule,
-                        itemModifier = Modifier.weight(1f)
-                    )
-                }
-            }
+            HomeInfoRow(
+                icon = Icons.Filled.Security,
+                label = stringResource(R.string.home_hook_method),
+                value = hookMethod
+            )
+            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+            HomeInfoRow(
+                icon = Icons.Filled.Fingerprint,
+                label = stringResource(R.string.home_susfs_version),
+                value = stringResource(R.string.home_not_supported),
+                valueColor = cs.outline
+            )
         }
     }
+}
 
-    if (useClassicLayout) {
-        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            headerCardContent(Modifier.fillMaxWidth().height(170.dp))
-            statsCardsContent(Modifier.fillMaxWidth(), false)
-        }
-    } else {
-        Row(
+@Composable
+private fun HomeInfoRow(
+    icon: ImageVector,
+    label: String,
+    value: String,
+    valueColor: Color = MaterialTheme.colorScheme.onSurface
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(24.dp)
+        )
+        Spacer(Modifier.width(16.dp))
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.weight(1f)
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium,
+            color = valueColor
+        )
+    }
+}
+
+@Composable
+private fun HomeCountCard(
+    title: String,
+    count: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    elevated: Boolean = false
+) {
+    val cs = MaterialTheme.colorScheme
+    Card(
+        modifier = modifier,
+        colors = if (elevated)
+            CardDefaults.elevatedCardColors(
+                containerColor = cs.surfaceColorAtElevation(4.dp)
+            )
+        else
+            CardDefaults.elevatedCardColors(),
+        elevation = CardDefaults.elevatedCardElevation(
+            defaultElevation = if (elevated) 8.dp else 4.dp
+        )
+    ) {
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(IntrinsicSize.Min),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                .clickable { onClick() }
+                .padding(horizontal = 24.dp, vertical = 16.dp)
         ) {
-            headerCardContent(Modifier.weight(0.6f).fillMaxHeight())
-            statsCardsContent(Modifier.weight(0.4f).fillMaxHeight(), true)
+            Text(text = title, style = MaterialTheme.typography.bodyLarge)
+            Spacer(Modifier.height(4.dp))
+            Text(text = count, style = MaterialTheme.typography.bodyMedium, color = cs.onSurfaceVariant)
         }
     }
 }

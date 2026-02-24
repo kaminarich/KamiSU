@@ -1,8 +1,8 @@
 #!/bin/bash
 
 word1="com"
-word2="rapli"
-word3="mambosu"
+word2="kaminarich"
+word3="kamisu"
 
 # Export variables for use in find -exec
 export word1 word2 word3
@@ -19,7 +19,7 @@ find . -type f -exec sed -i \
     -e "s/me_weishu_kernelsu/${word1}_${word2}_${word3}/g" {} +
 
 if [ -f "./app/build.gradle.kts" ]; then
-    sed -i 's/outputFileName = "KernelSU_${managerVersionName}_${managerVersionCode}-\$name.apk"/outputFileName = "MamboSU_${managerVersionName}_${managerVersionCode}-\$name.apk"/' ./app/build.gradle.kts
+    sed -i 's/outputFileName = "KernelSU_${managerVersionName}_${managerVersionCode}-\$name.apk"/outputFileName = "KamiSU_${managerVersionName}_${managerVersionCode}-\$name.apk"/' ./app/build.gradle.kts
 fi
 
 echo "Done."

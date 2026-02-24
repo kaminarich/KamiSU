@@ -5,8 +5,12 @@
     <string name="home">Home</string>
     <string name="home_not_installed">Not installed</string>
     <string name="home_click_to_install">Click to install</string>
-    <string name="home_working">Working</string>
+    <string name="home_working">Welcome</string>
     <string name="home_working_version">Version: %d</string>
+    <string name="home_hook_method">Hook Method</string>
+    <string name="home_susfs_version">SuSFS Version</string>
+    <string name="home_not_supported">Not supported</string>
+    <string name="home_change_banner">Change banner</string>
     <string name="home_superuser_count">Superusers: %d</string>
     <string name="home_module_count">Modules: %d</string>
     <string name="home_unsupported">Unsupported</string>
