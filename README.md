@@ -115,7 +115,7 @@ Full hashes are defined in [`kernel/manager_sign.h`](kernel/manager_sign.h).
 
 ## Discussion
 
-- Telegram Channel: [@KamiSkizofrenia](https://t.me/kaminarich_here)
+- Telegram Channel: [@Kaminarich_here](https://t.me/kaminarich_here)
 
 ---
 
