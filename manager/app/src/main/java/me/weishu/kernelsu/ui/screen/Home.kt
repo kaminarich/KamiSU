@@ -1,801 +1,330 @@
 package me.weishu.kernelsu.ui.screen
 
-import android.content.Context
-import android.os.Build
-import android.os.Build.VERSION.SDK_INT
-import android.system.Os
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateContentSize
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
+import android.content.Intent
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.WindowInsetsSides
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.only
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Archive
-import androidx.compose.material.icons.outlined.Block
-import androidx.compose.material.icons.outlined.CheckCircle
-import androidx.compose.material.icons.outlined.Warning
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.TopAppBarScrollBehavior
-import androidx.compose.material3.rememberTopAppBarState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.produceState
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.surfaceColorAtElevation
-import androidx.compose.runtime.remember
-import androidx.compose.ui.graphics.Shape
-import androidx.core.content.pm.PackageInfoCompat
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootGraph
-import com.ramcosta.composedestinations.generated.NavGraphs
-import com.ramcosta.composedestinations.generated.destinations.InstallScreenDestination
-import com.ramcosta.composedestinations.generated.destinations.ModuleScreenDestination
-import com.ramcosta.composedestinations.generated.destinations.SuperUserScreenDestination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.res.painterResource
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.size
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.Spring
-import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.material.icons.filled.Android
-import androidx.compose.material.icons.filled.AutoAwesomeMotion
-import androidx.compose.material.icons.filled.Fingerprint
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.Memory
-import androidx.compose.material.icons.filled.Security
-import androidx.compose.ui.draw.rotate
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.unit.IntSize
-import androidx.compose.animation.core.VisibilityThreshold
-import androidx.compose.foundation.layout.IntrinsicSize
-import androidx.compose.foundation.layout.fillMaxHeight
-import me.weishu.kernelsu.ui.util.getHeaderImage
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import coil.ImageLoader
-import coil.decode.GifDecoder
-import coil.decode.ImageDecoderDecoder
+import com.ramcosta.composedestinations.annotation.Destination
+import com.ramcosta.composedestinations.annotation.RootNavGraph
+import com.ramcosta.composedestinations.navigation.DestinationsNavigator
+import com.ramcosta.composedestinations.generated.destinations.InstallScreenDestination
+import me.weishu.kernelsu.BuildConfig
 import me.weishu.kernelsu.KernelVersion
 import me.weishu.kernelsu.Natives
 import me.weishu.kernelsu.R
 import me.weishu.kernelsu.getKernelVersion
-import me.weishu.kernelsu.ui.component.RebootListPopup
-import me.weishu.kernelsu.ui.component.rememberConfirmDialog
-import me.weishu.kernelsu.ui.util.checkNewVersion
-import me.weishu.kernelsu.ui.util.getLayoutStyle
-import me.weishu.kernelsu.ui.util.getModuleCount
-import me.weishu.kernelsu.ui.util.getSELinuxStatus
-import me.weishu.kernelsu.ui.util.getSuperuserCount
-import me.weishu.kernelsu.ui.util.module.LatestVersionInfo
-import me.weishu.kernelsu.ui.util.rootAvailable
+import me.weishu.kernelsu.ui.util.getHeaderImage
+import me.weishu.kernelsu.ui.util.saveHeaderImage
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Destination<RootGraph>(start = true)
+@RootNavGraph(start = true)
+@Destination
 @Composable
 fun HomeScreen(navigator: DestinationsNavigator) {
-    val context = LocalContext.current
+    val isManager = Natives.isManager
+    val ksuVersion = if (isManager) Natives.version else null
     val kernelVersion = getKernelVersion()
-    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
+    val scrollState = rememberScrollState()
 
-    Scaffold(
-        topBar = { TopBar(scrollBehavior = scrollBehavior) },
-        contentWindowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
-    ) { innerPadding ->
+    // Menghilangkan TopAppBar bawaan (Header)
+    Scaffold { innerPadding ->
         Column(
             modifier = Modifier
-                .padding(innerPadding)
-                .nestedScroll(scrollBehavior.nestedScrollConnection)
-                .verticalScroll(rememberScrollState())
-                .padding(start = 16.dp, end = 16.dp, top = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .fillMaxSize()
+                .verticalScroll(scrollState)
+                // Hanya gunakan bottom padding. Top dibiarkan agar banner full ke atas layar
+                .padding(bottom = innerPadding.calculateBottomPadding())
         ) {
-            val isManager = Natives.isManager
-            val ksuVersion = if (isManager) Natives.version else null
-            val lkmMode = ksuVersion?.let {
-                if (kernelVersion.isGKI()) Natives.isLkmMode else null
-            }
-            val fullFeatured = isManager && !Natives.requireNewKernel() && rootAvailable()
+            
+            // 1. BANNER CUSTOM (Full atas, melengkung bawah, pakai shadow)
+            HomeBanner(ksuVersion = ksuVersion)
 
-            StatusCard(
-                kernelVersion,
-                ksuVersion,
-                lkmMode,
-                fullFeatured,
-                useClassicLayout = context.getLayoutStyle(),
-                onClickInstall = { navigator.navigate(InstallScreenDestination) },
-                onClickSuperuser = {
-                    navigator.navigate(SuperUserScreenDestination) {
-                        popUpTo(NavGraphs.root) {
-                            saveState = true
-                        }
-                        launchSingleTop = true
-                        restoreState = true
-                    }
-                },
-                onclickModule = {
-                    navigator.navigate(ModuleScreenDestination) {
-                        popUpTo(NavGraphs.root) {
-                            saveState = true
-                        }
-                        launchSingleTop = true
-                        restoreState = true
-                    }
-                }
+            // 2. STATUS INDICATOR & INSTALL BUTTON
+            StatusSection(ksuVersion = ksuVersion, navigator = navigator)
+
+            // 3. SATU CARDVIEW UNTUK SEMUA INFO (GRID)
+            UnifiedInfoGrid(
+                kernelVersion = kernelVersion,
+                managerVersionName = BuildConfig.VERSION_NAME,
+                managerVersionCode = BuildConfig.VERSION_CODE
             )
-//            if (ksuVersion != null && !Natives.isLkmMode) {
-//                WarningCard(stringResource(id = R.string.home_gki_warning))
-//            }
-            if (isManager && Natives.requireNewKernel()) {
-                WarningCard(
-                    stringResource(id = R.string.require_kernel_version).format(
-                        ksuVersion, Natives.MINIMAL_SUPPORTED_KERNEL
-                    )
-                )
-            }
-            if (ksuVersion != null && !rootAvailable()) {
-                WarningCard(
-                    stringResource(id = R.string.grant_root_failed)
-                )
-            }
-//            val checkUpdate =
-//                LocalContext.current.getSharedPreferences("settings", Context.MODE_PRIVATE)
-//                    .getBoolean("check_update", true)
-//            if (checkUpdate) {
-//                UpdateCard()
-//            }
-            InfoCard()
-            DonateCard()
-            LearnMoreCard()
-            Spacer(Modifier)
         }
     }
 }
 
 @Composable
-fun UpdateCard() {
+fun HomeBanner(ksuVersion: Int?) {
     val context = LocalContext.current
-    val latestVersionInfo = LatestVersionInfo()
-    val newVersion by produceState(initialValue = latestVersionInfo) {
-        value = withContext(Dispatchers.IO) {
-            checkNewVersion()
+    val contentResolver = context.contentResolver
+    var headerImageUri by remember { mutableStateOf(context.getHeaderImage()) }
+    
+    // Menghitung tinggi status bar agar teks/tombol tidak tertimpa jam/baterai HP
+    val statusBarPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+
+    // Launcher untuk ganti gambar banner
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
+        if (uri != null) {
+            try {
+                contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                context.saveHeaderImage(uri.toString())
+                headerImageUri = uri.toString()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
-    val currentVersionCode = getManagerVersion(context).second
-    val newVersionCode = newVersion.versionCode
-    val newVersionUrl = newVersion.downloadUrl
-    val changelog = newVersion.changelog
-
-    val uriHandler = LocalUriHandler.current
-    val title = stringResource(id = R.string.module_changelog)
-    val updateText = stringResource(id = R.string.module_update)
-
-    AnimatedVisibility(
-        visible = newVersionCode > currentVersionCode,
-        enter = fadeIn() + expandVertically(),
-        exit = shrinkVertically() + fadeOut()
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            // Tinggi total = tinggi base banner + tinggi status bar HP
+            .height(220.dp + statusBarPadding)
+            // Tambahkan Shadow (Efek Bayangan) dengan bentuk sudut bawah yang melengkung
+            .shadow(
+                elevation = 8.dp, 
+                shape = RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp)
+            )
+            // Potong konten banner agar tidak keluar dari area lengkung
+            .clip(RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp))
     ) {
-        val updateDialog = rememberConfirmDialog(onConfirm = { uriHandler.openUri(newVersionUrl) })
-        WarningCard(
-            message = stringResource(id = R.string.new_version_available).format(newVersionCode),
-            MaterialTheme.colorScheme.outlineVariant
-        ) {
-            if (changelog.isEmpty()) {
-                uriHandler.openUri(newVersionUrl)
-            } else {
-                updateDialog.showConfirm(
-                    title = title,
-                    content = changelog,
-                    markdown = true,
-                    confirm = updateText
-                )
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun TopBar(
-    scrollBehavior: TopAppBarScrollBehavior? = null
-) {
-    val context = LocalContext.current
-    val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
-    val isOfficialEnabled = prefs.getBoolean("enable_official_launcher", false)
-    val appNameId = if (isOfficialEnabled) R.string.app_name else R.string.app_name_mambo
-
-    TopAppBar(
-        title = {
-            Text(
-                text = stringResource(appNameId),
-                fontWeight = FontWeight.Bold
+        // Latar Belakang Banner (Gambar atau Default Warna Bawaan)
+        if (headerImageUri != null) {
+            AsyncImage(
+                model = ImageRequest.Builder(context)
+                    .data(Uri.parse(headerImageUri))
+                    .crossfade(true)
+                    .build(),
+                contentDescription = "Banner",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
             )
-        },
-        actions = { RebootListPopup() },
-        windowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),
-        scrollBehavior = scrollBehavior
-    )
-}
-
-@Composable
-private fun StatusCard(
-    kernelVersion: KernelVersion,
-    ksuVersion: Int?,
-    lkmMode: Boolean?,
-    fullFeatured: Boolean?,
-    useClassicLayout: Boolean,
-    onClickInstall: () -> Unit = {},
-    onClickSuperuser: () -> Unit = {},
-    onclickModule: () -> Unit = {},
-) {
-    val context = LocalContext.current
-    val cs = MaterialTheme.colorScheme
-
-    // --- LOGIC TEXT & DATA ---
-    val workingMode = when (lkmMode) {
-        null -> "LEGACY"
-        true -> "LKM"
-        else -> "GKI"
-    }
-
-    val versionText = when {
-        ksuVersion != null -> "Version: $ksuVersion - $workingMode"
-        kernelVersion.isGKI() -> stringResource(R.string.home_click_to_install)
-        else -> stringResource(R.string.home_unsupported)
-    }
-
-    val statusText = if (ksuVersion != null)
-        stringResource(R.string.home_working)
-    else
-        stringResource(R.string.home_not_installed)
-
-    // --- IMAGE LOADER ---
-    val headerImageUri = context.getHeaderImage()
-    val imageLoader = remember(context) {
-        ImageLoader.Builder(context)
-            .components {
-                if (SDK_INT >= 28) {
-                    add(ImageDecoderDecoder.Factory())
-                } else {
-                    add(GifDecoder.Factory())
-                }
-            }
-            .build()
-    }
-
-    // --- HEADER CARD CONTENT ---
-    val headerCardContent = @Composable { modifier: Modifier ->
-        TonalCard(
-            containerColor = Color.Transparent,
-            modifier = modifier.clip(RoundedCornerShape(28.dp))
-        ) {
+            // Overlay warna gelap tipis supaya teks selalu terbaca kalau pakai gambar
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .clickable { onClickInstall() }
-            ) {
-                // Background Image
-                if (headerImageUri != null) {
-                    AsyncImage(
-                        model = ImageRequest.Builder(context)
-                            .data(headerImageUri)
-                            .crossfade(true)
-                            .build(),
-                        imageLoader = imageLoader,
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.matchParentSize()
-                    )
-                } else {
-                    Image(
-                        painter = painterResource(R.drawable.header_bg),
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.matchParentSize()
-                    )
-                }
-
-                // Gradient Overlay
-                Box(
-                    modifier = Modifier
-                        .matchParentSize()
-                        .background(
-                            Brush.verticalGradient(
-                                listOf(Color.Transparent, cs.surface.copy(alpha = 0.8f))
-                            )
-                        )
-                )
-
-                // Content Overlay
-                if (useClassicLayout) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(24.dp),
-                        verticalArrangement = Arrangement.Bottom,
-                        horizontalAlignment = Alignment.Start
-                    ) {
-                        Box(modifier = Modifier.clip(RoundedCornerShape(50))) {
-                            Box(modifier = Modifier.matchParentSize().blur(16.dp).background(cs.secondaryContainer.copy(alpha = 0.6f)))
-                            Text(
-                                text = statusText,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = cs.onSecondaryContainer,
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                            )
-                        }
-                        Spacer(Modifier.height(8.dp))
-                        Box(modifier = Modifier.clip(RoundedCornerShape(50))) {
-                            Box(modifier = Modifier.matchParentSize().blur(16.dp).background(cs.secondaryContainer.copy(alpha = 0.6f)))
-                            Text(
-                                text = versionText,
-                                style = MaterialTheme.typography.labelMedium,
-                                color = cs.onSecondaryContainer,
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                            )
-                        }
-                    }
-                } else {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(16.dp),
-                        verticalArrangement = Arrangement.Bottom,
-                        horizontalAlignment = Alignment.Start
-                    ) {
-                        Box(modifier = Modifier.clip(RoundedCornerShape(50))) {
-                            Box(modifier = Modifier.matchParentSize().blur(16.dp).background(cs.secondaryContainer.copy(alpha = 0.6f)))
-                            Text(
-                                text = statusText,
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = cs.onSecondaryContainer,
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Box(modifier = Modifier.clip(RoundedCornerShape(50))) {
-                            Box(modifier = Modifier.matchParentSize().blur(16.dp).background(cs.secondaryContainer.copy(alpha = 0.6f)))
-                            Text(
-                                text = versionText,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = cs.onSecondaryContainer,
-                                maxLines = 1,
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    val statsCardsContent = @Composable { modifier: Modifier, isVertical: Boolean ->
-        if (fullFeatured == true) {
-            @Composable
-            fun StatInfoCard(title: String, count: String, onClick: () -> Unit, itemModifier: Modifier) {
-                TonalCard(modifier = itemModifier) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onClick() }
-                            .padding(horizontal = 24.dp, vertical = 16.dp)
-                    ) {
-                        Text(
-                            text = title,
-                            style = MaterialTheme.typography.bodyLarge
-                        )
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            text = count,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = cs.onSurfaceVariant
-                        )
-                    }
-                }
-            }
-
-            if (isVertical) {
-                Column(
-                    modifier = modifier,
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    StatInfoCard(
-                        title = stringResource(R.string.superuser),
-                        count = getSuperuserCount().toString(),
-                        onClick = onClickSuperuser,
-                        itemModifier = Modifier.weight(1f) // Fill width handled by Column
-                    )
-                    StatInfoCard(
-                        title = stringResource(R.string.module),
-                        count = getModuleCount().toString(),
-                        onClick = onclickModule,
-                        itemModifier = Modifier.weight(1f)
-                    )
-                }
-            } else {
-                Row(
-                    modifier = modifier,
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    StatInfoCard(
-                        title = stringResource(R.string.superuser),
-                        count = getSuperuserCount().toString(),
-                        onClick = onClickSuperuser,
-                        itemModifier = Modifier.weight(1f)
-                    )
-                    StatInfoCard(
-                        title = stringResource(R.string.module),
-                        count = getModuleCount().toString(),
-                        onClick = onclickModule,
-                        itemModifier = Modifier.weight(1f)
-                    )
-                }
-            }
-        }
-    }
-
-    if (useClassicLayout) {
-        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            headerCardContent(Modifier.fillMaxWidth().height(170.dp))
-            statsCardsContent(Modifier.fillMaxWidth(), false)
-        }
-    } else {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(IntrinsicSize.Min),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            headerCardContent(Modifier.weight(0.6f).fillMaxHeight())
-            statsCardsContent(Modifier.weight(0.4f).fillMaxHeight(), true)
-        }
-    }
-}
-
-@Composable
-fun WarningCard(
-    message: String, color: Color = MaterialTheme.colorScheme.error, onClick: (() -> Unit)? = null
-) {
-    TonalCard(containerColor = color) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .then(onClick?.let { Modifier.clickable { it() } } ?: Modifier)
-                .padding(24.dp)
-        ) {
-            Text(
-                text = message, style = MaterialTheme.typography.bodyMedium
+                    .background(Color.Black.copy(alpha = 0.3f))
             )
-        }
-    }
-}
-
-@Composable
-fun TonalCard(
-    modifier: Modifier = Modifier,
-    containerColor: Color = MaterialTheme.colorScheme.surfaceColorAtElevation(1.dp),
-    shape: Shape = RoundedCornerShape(20.dp),
-    content: @Composable () -> Unit
-) {
-    Card(
-        modifier = modifier,
-        colors = CardDefaults.cardColors(containerColor = containerColor),
-        shape = shape
-    ) {
-        content()
-    }
-}
-
-@Composable
-fun LearnMoreCard() {
-    val uriHandler = LocalUriHandler.current
-    val url = stringResource(R.string.home_learn_kernelsu_url)
-
-    TonalCard {
-        Row(modifier = Modifier
-            .fillMaxWidth()
-            .clickable {
-                uriHandler.openUri(url)
-            }
-            .padding(24.dp), verticalAlignment = Alignment.CenterVertically) {
-            Column {
-                Text(
-                    text = stringResource(R.string.home_learn_kernelsu),
-                    style = MaterialTheme.typography.titleSmall
-                )
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    text = stringResource(R.string.home_click_to_learn_kernelsu),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.outline
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun DonateCard() {
-    val uriHandler = LocalUriHandler.current
-
-    TonalCard {
-        Row(modifier = Modifier
-            .fillMaxWidth()
-            .clickable {
-                uriHandler.openUri("https://patreon.com/weishu")
-            }
-            .padding(24.dp), verticalAlignment = Alignment.CenterVertically) {
-            Column {
-                Text(
-                    text = stringResource(R.string.home_support_title),
-                    style = MaterialTheme.typography.titleSmall
-                )
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    text = stringResource(R.string.home_support_content),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.outline
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun InfoCard() {
-    val context = LocalContext.current
-    val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
-
-    val isManager = Natives.isManager
-    val ksuVersion = if (isManager) Natives.version else null
-
-    // State expand
-    var expanded by rememberSaveable { mutableStateOf(false) }
-    val developerOptionsEnabled = prefs.getBoolean("enable_developer_options", false)
-
-    val arrowRotation by animateFloatAsState(
-        targetValue = if (expanded) 180f else 0f,
-        animationSpec = spring(stiffness = Spring.StiffnessLow), // Putaran smooth pelan
-        label = "arrowRotation"
-    )
-
-    TonalCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(CardDefaults.shape)
-            .clickable { expanded = !expanded }
-            .animateContentSize(
-                animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioNoBouncy,
-                    stiffness = Spring.StiffnessMediumLow
-                )
-            )
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(24.dp)
-        ) {
-            @Composable
-            fun InfoCardItem(label: String, content: String, icon: Any? = null) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (icon != null) {
-                        val modifier = Modifier.padding(end = 20.dp)
-                        val tint = MaterialTheme.colorScheme.primary
-                        when (icon) {
-                            is ImageVector -> Icon(icon, null, modifier, tint = tint)
-                            is Painter -> Icon(icon, null, modifier, tint = tint)
-                        }
-                    }
-                    Column {
-                        Text(
-                            text = label,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        Text(
-                            text = content,
-                            style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.padding(top = 4.dp),
-                            color = MaterialTheme.colorScheme.outline
-                        )
-                    }
-                }
-            }
-
-            Column {
-                val managerVersion = getManagerVersion(context)
-                val uidText = if (developerOptionsEnabled) " | UID: ${android.os.Process.myUid()}" else ""
-
-                InfoCardItem(
-                    label = stringResource(R.string.home_manager_version),
-                    content = "${managerVersion.first} (${managerVersion.second})$uidText",
-                    icon = Icons.Filled.AutoAwesomeMotion,
-                )
-
-                Spacer(Modifier.height(16.dp))
-
-                val uname = Os.uname()
-                InfoCardItem(
-                    label = stringResource(R.string.home_kernel),
-                    content = "${uname.release} (${uname.machine})",
-                    icon = Icons.Filled.Memory,
-                )
-            }
-
-            AnimatedVisibility(
-                visible = expanded,
-                enter = fadeIn(animationSpec = tween(400)) + expandVertically(
-                    animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioNoBouncy,
-                        stiffness = Spring.StiffnessMediumLow
-                    )
-                ),
-                exit = fadeOut(animationSpec = tween(200)) + shrinkVertically(
-                    animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioNoBouncy,
-                        stiffness = Spring.StiffnessMediumLow
-                    )
-                )
-            ) {
-                Column {
-                    Spacer(Modifier.height(16.dp))
-
-                    InfoCardItem(
-                        label = stringResource(R.string.home_android),
-                        content = "${Build.VERSION.RELEASE} (SDK ${Build.VERSION.SDK_INT})",
-                        icon = Icons.Filled.Android,
-                    )
-
-                    Spacer(Modifier.height(16.dp))
-
-                    InfoCardItem(
-                        label = stringResource(R.string.home_selinux_status),
-                        content = getSELinuxStatus(),
-                        icon = Icons.Filled.Security,
-                    )
-
-                    Spacer(Modifier.height(16.dp))
-
-                    InfoCardItem(
-                        label = stringResource(R.string.home_fingerprint),
-                        content = Build.FINGERPRINT,
-                        icon = Icons.Filled.Fingerprint,
-                    )
-                }
-            }
-
+        } else {
+            // Warna Default Bawaan jika tidak ada gambar (tanpa overlay hitam)
             Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 16.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                IconButton(
-                    onClick = { expanded = !expanded },
-                    modifier = Modifier.size(36.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.KeyboardArrowDown,
-                        contentDescription = "Show more",
-                        modifier = Modifier.rotate(arrowRotation) // Rotasi Smooth
-                    )
-                }
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.primaryContainer)
+            )
+        }
+
+        // Tombol Edit/Ganti Banner (Kiri Atas)
+        IconButton(
+            onClick = { launcher.launch(arrayOf("image/*")) },
+            modifier = Modifier
+                .align(Alignment.TopLeft)
+                // Padding atas ditambah statusBarPadding agar turun ke bawah jam
+                .padding(top = 16.dp + statusBarPadding, start = 8.dp) 
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Edit,
+                contentDescription = "Change Banner",
+                tint = if (headerImageUri != null) Color.White else MaterialTheme.colorScheme.onPrimaryContainer
+            )
+        }
+
+        // Teks KamiSU (Kanan Atas) + Status Not Installed (Kecil di Bawahnya)
+        Column(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                // Padding atas ditambah statusBarPadding agar turun ke bawah baterai
+                .padding(top = 28.dp + statusBarPadding, end = 24.dp),
+            horizontalAlignment = Alignment.End
+        ) {
+            Text(
+                text = stringResource(id = R.string.app_name), // Teks "KamiSU"
+                fontSize = 38.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = if (headerImageUri != null) Color.White else MaterialTheme.colorScheme.onPrimaryContainer
+            )
+            
+            // Teks "Not Installed" kecil jika belum terinstall
+            if (ksuVersion == null) {
+                Text(
+                    text = stringResource(id = R.string.home_status_not_installed),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = if (headerImageUri != null) Color.White.copy(alpha = 0.85f) else MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f),
+                    modifier = Modifier.padding(top = 2.dp)
+                )
             }
         }
     }
 }
 
-fun getManagerVersion(context: Context): Pair<String, Long> {
-    val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)!!
-    val versionCode = PackageInfoCompat.getLongVersionCode(packageInfo)
-    return Pair(packageInfo.versionName!!, versionCode)
-}
-
-@Preview
 @Composable
-private fun StatusCardPreview() {
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        // Preview 1: Classic Layout (Working)
-        StatusCard(
-            kernelVersion = KernelVersion(5, 10, 101),
-            ksuVersion = 1,
-            lkmMode = null,
-            fullFeatured = false,
-            useClassicLayout = true // Classic
-        )
-
-        // Preview 2: Modern Layout (Working + Full Featured)
-        StatusCard(
-            kernelVersion = KernelVersion(5, 10, 101),
-            ksuVersion = 20000,
-            lkmMode = true,
-            fullFeatured = true,
-            useClassicLayout = false // Modern
-        )
-
-        // Preview 3: Classic Layout (Not Installed)
-        StatusCard(
-            kernelVersion = KernelVersion(5, 10, 101),
-            ksuVersion = null,
-            lkmMode = true,
-            fullFeatured = true,
-            useClassicLayout = true // Classic
-        )
-
-        // Preview 4: Modern Layout (Unsupported)
-        StatusCard(
-            kernelVersion = KernelVersion(4, 10, 101),
-            ksuVersion = null,
-            lkmMode = false,
-            fullFeatured = false,
-            useClassicLayout = false // Modern
-        )
+fun StatusSection(ksuVersion: Int?, navigator: DestinationsNavigator) {
+    if (ksuVersion != null) {
+        // CardView "Running Flawlessly" (Working) di bawah banner
+        ElevatedCard(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 16.dp, end = 16.dp, top = 20.dp, bottom = 8.dp),
+            colors = CardDefaults.elevatedCardColors(
+                containerColor = MaterialTheme.colorScheme.secondaryContainer
+            ),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Row(
+                modifier = Modifier.padding(20.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Verified, // Ikon Centang (ic_work)
+                    contentDescription = "Working",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(32.dp)
+                )
+                Spacer(modifier = Modifier.width(16.dp))
+                Text(
+                    text = stringResource(id = R.string.running_flawlessly),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+            }
+        }
+    } else {
+        // Tombol "Click to Install" (Not Installed) di luar banner
+        Button(
+            onClick = { navigator.navigate(InstallScreenDestination) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 16.dp, end = 16.dp, top = 20.dp, bottom = 8.dp)
+                .height(54.dp),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Icon(Icons.Filled.Build, contentDescription = null)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = stringResource(id = R.string.home_install),
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
     }
 }
 
-@Preview
 @Composable
-private fun WarningCardPreview() {
-    Column {
-        WarningCard(message = "Warning message")
-        WarningCard(
-            message = "Warning message ",
-            MaterialTheme.colorScheme.outlineVariant,
-            onClick = {})
+fun UnifiedInfoGrid(
+    kernelVersion: KernelVersion,
+    managerVersionName: String,
+    managerVersionCode: Int
+) {
+    val uriHandler = LocalUriHandler.current
+
+    // Satu CardView Utama
+    ElevatedCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(1.dp)
+        )
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            
+            // --- BARIS 1: KERNEL & MANAGER ---
+            Row(modifier = Modifier
+                .fillMaxWidth()
+                .height(IntrinsicSize.Min)) {
+                
+                // Blok: Kernel Version
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(Icons.Filled.Memory, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(text = stringResource(id = R.string.home_kernel_version), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.outline)
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(text = kernelVersion.toString(), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+                }
+
+                VerticalDivider(modifier = Modifier.padding(vertical = 12.dp))
+
+                // Blok: Manager Version
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(Icons.Filled.PhoneAndroid, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(text = stringResource(id = R.string.home_manager_version), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.outline)
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(text = "$managerVersionName ($managerVersionCode)", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+                }
+            }
+
+            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+
+            // --- BARIS 2: SUPPORT & LEARN ---
+            Row(modifier = Modifier
+                .fillMaxWidth()
+                .height(IntrinsicSize.Min)) {
+                
+                // Blok: Support Us
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable { uriHandler.openUri("https://kernelsu.org/donate.html") }
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(Icons.Filled.Favorite, contentDescription = null, tint = Color(0xFFE91E63))
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(text = stringResource(id = R.string.home_support_us), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                }
+
+                VerticalDivider(modifier = Modifier.padding(vertical = 12.dp))
+
+                // Blok: Learn KernelSU/KamiSU
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable { uriHandler.openUri("https://kernelsu.org/") }
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(Icons.Filled.MenuBook, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(text = stringResource(id = R.string.learn_kamisu), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
     }
 }
