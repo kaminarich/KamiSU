@@ -21,16 +21,18 @@ on:
         required: false
         type: boolean
         default: true
+env:
+  CARGO_TERM_COLOR: always
 jobs:
   build:
     runs-on: ${{ inputs.os }}
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
       with:
         fetch-depth: 0
 
     - name: Download artifacts
-      uses: actions/download-artifact@v6
+      uses: actions/download-artifact@v7
     
     - name: Prepare LKM fies
       if: ${{ inputs.pack_lkm }}
@@ -41,26 +43,30 @@ jobs:
       if: ${{ inputs.pack_ksuinit }}
       run: |
         mv ksuinit/*/release/ksuinit ./userspace/ksud/bin/aarch64/
-        
-    - name: Setup rustup
-      run: |
-        rustup update stable
-        rustup target add x86_64-apple-darwin
-        rustup target add aarch64-apple-darwin
-    - uses: Swatinem/rust-cache@v2
+     
+    - name: Setup Rust toolchain
+      uses: dtolnay/rust-toolchain@stable
       with:
+        toolchain: stable
+        targets: ${{ inputs.target }}
+        components: rust-src
+        
+    - uses: Swatinem/rust-cache@v2
+      if: github.event_name != 'pull_request'
+      with:
+        prefix-key: ksud-${{ inputs.target }}-rust
         workspaces: userspace/ksud
-        cache-targets: false
-
-    - name: Install cross
-      run: |
-        RUSTFLAGS="" cargo install cross --git https://github.com/cross-rs/cross --rev 66845c1
-
+        
+    - name: Setup cargo-ndk
+      run: cargo install cargo-ndk --locked
+        
     - name: Build ksud
-      run: CROSS_NO_WARNINGS=0 cross build --target ${{ inputs.target }} --release --manifest-path ./userspace/ksud/Cargo.toml
+      run: |
+        cd userspace/ksud/
+        cargo ndk b -t ${{ inputs.target }} -r
 
     - name: Upload ksud artifact
-      uses: actions/upload-artifact@v5
+      uses: actions/upload-artifact@v6
       with:
         name: ksud-${{ inputs.target }}
         path: userspace/ksud/target/**/release/ksud*

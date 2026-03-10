@@ -1,0 +1,26 @@
+name: Build Kernel
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "main", "dev", "ci", "master" ]
+    paths:
+      - '.github/workflows/build-kernel.yml'
+      - '.github/workflows/build-lkm.yml'
+      - '.github/workflows/ddk-lkm.yml'
+      - 'kernel/**'
+  pull_request:
+    branches: [ "main", "dev", "master" ]
+    paths:
+      - '.github/workflows/build-kernel.yml'
+      - '.github/workflows/build-lkm.yml'
+      - '.github/workflows/ddk-lkm.yml'
+      - 'kernel/**'
+
+permissions:
+  contents: read
+
+jobs:
+  build-lkm:
+    uses: ./.github/workflows/build-lkm.yml
+    secrets: inherit
