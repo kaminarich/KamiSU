@@ -1,0 +1,98 @@
+name: Build App → Update Hash → Build Kernel
+
+# ─────────────────────────────────────────────────────────────
+# One-click pipeline that:
+#   1. Builds the KamiSU Manager APK (with the real signing key)
+#   2. Extracts the APK v2 certificate hash from the built APK
+#   3. Builds the kernel for the chosen KMI with that hash
+#      embedded in kamisu_sign.h so the kernel recognises only
+#      your signed Manager as the privileged manager app.
+#
+# Trigger manually from Actions → "Build App → Update Hash → Build Kernel"
+# ─────────────────────────────────────────────────────────────
+on:
+  workflow_dispatch:
+    inputs:
+      kmi:
+        description: 'KMI version to build kernel for'
+        required: false
+        default: 'android14-6.1'
+        type: choice
+        options:
+          - android14-6.1
+          - android14-5.15
+          - android15-6.6
+          - android16-6.12
+          - android13-5.15
+          - android13-5.10
+          - android12-5.10
+
+permissions:
+  contents: read
+
+jobs:
+  # ── Step 1: Build the Manager APK (uses the real keystore if configured) ──
+  build-manager:
+    uses: ./.github/workflows/build-manager.yml
+    secrets: inherit
+
+  # ── Step 2: Extract the APK v2 certificate hash ────────────────────────────
+  extract-hash:
+    needs: build-manager
+    runs-on: ubuntu-latest
+    outputs:
+      cert_size: ${{ steps.extract.outputs.cert_size }}
+      cert_hash: ${{ steps.extract.outputs.cert_hash }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Download Manager Release APK
+        uses: actions/download-artifact@v7
+        with:
+          name: Manager-Release
+          path: ./manager-release
+
+      - name: Extract APK certificate hash
+        id: extract
+        run: |
+          APK_FILE=$(find ./manager-release -name "*.apk" -path "*/release/*" | head -1)
+          if [ -z "$APK_FILE" ]; then
+            # Fallback: any APK in the artifact
+            APK_FILE=$(find ./manager-release -name "*.apk" | head -1)
+          fi
+          if [ -z "$APK_FILE" ]; then
+            echo "Error: no APK found in Manager-Release artifact" >&2
+            exit 1
+          fi
+          echo "Using APK: $APK_FILE"
+
+          HASH_OUTPUT=$(python3 scripts/extract_apk_hash.py "$APK_FILE")
+          CERT_SIZE=$(echo "$HASH_OUTPUT" | grep '^CERT_SIZE=' | cut -d= -f2)
+          CERT_HASH=$(echo "$HASH_OUTPUT" | grep '^CERT_HASH=' | cut -d= -f2)
+
+          if [ -z "$CERT_SIZE" ] || [ -z "$CERT_HASH" ]; then
+            echo "Error: failed to extract hash from APK" >&2
+            echo "Script output: $HASH_OUTPUT" >&2
+            exit 1
+          fi
+
+          echo "Extracted certificate:"
+          echo "  SIZE : $CERT_SIZE  (0x$(printf '%x' $CERT_SIZE))"
+          echo "  HASH : $CERT_HASH"
+
+          echo "cert_size=${CERT_SIZE}" >> "$GITHUB_OUTPUT"
+          echo "cert_hash=${CERT_HASH}" >> "$GITHUB_OUTPUT"
+
+  # ── Step 3: Build kernel for the target KMI with the new hash ──────────────
+  build-kernel:
+    needs: extract-hash
+    uses: ./.github/workflows/ddk-lkm.yml
+    with:
+      kmi: ${{ inputs.kmi || 'android14-6.1' }}
+      ksu_expected_size: ${{ needs.extract-hash.outputs.cert_size }}
+      ksu_expected_hash: ${{ needs.extract-hash.outputs.cert_hash }}
+      # Give the integrated-build artifact a distinct name so it never
+      # conflicts with the per-KMI artifacts produced inside build-manager.
+      artifact_name: ${{ inputs.kmi || 'android14-6.1' }}-lkm-integrated
