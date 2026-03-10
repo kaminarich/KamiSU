@@ -142,8 +142,8 @@ static bool check_block(struct file *fp, u32 *size4, loff_t *pos, u32 *offset,
     hash_str[SHA256_DIGEST_SIZE * 2] = '\0';
 
     BUILD_BUG_ON(
-        ARRAY_SIZE(apk_sign_keys) >=
-        255); // keep 255, because 255 is the magic index for dynamic manager
+        ARRAY_SIZE(apk_sign_keys) >
+        254); // keep index 255 reserved as DYNAMIC_MANAGER_SIGNATURE_INDEX_MAGIC
     for (i = 0; i < ARRAY_SIZE(apk_sign_keys); i++) {
         sign_key = apk_sign_keys[i];
         if (*size4 == sign_key.size && strcmp(sign_key.sha256, hash_str) == 0) {
@@ -230,7 +230,7 @@ static __always_inline bool check_v2_signature(char *path, u8 *signature_index)
     int v2_signing_blocks = 0;
     bool v3_signing_exist = false;
     bool v3_1_signing_exist = false;
-    u8 matched_index = -1;
+    u8 matched_index = ARRAY_SIZE(apk_sign_keys); // sentinel: no match yet
     int i;
     struct file *fp = ksu_filp_open_compat(path, O_RDONLY, 0);
     if (IS_ERR(fp)) {

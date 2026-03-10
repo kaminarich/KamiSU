@@ -51,9 +51,6 @@ void ksu_register_manager(u32 uid, u8 signature_index)
     struct ksu_manager_node *node;
     u16 appid;
 
-    if (ksu_is_manager_uid(uid))
-        return;
-
     node = kzalloc(sizeof(*node), GFP_ATOMIC);
     if (unlikely(!node))
         return;
@@ -82,15 +79,11 @@ void ksu_register_manager(u32 uid, u8 signature_index)
 void ksu_unregister_manager(u32 uid)
 {
     struct ksu_manager_node *pos, *tmp;
-    bool mark_another_manager = false;
+    u16 appid = uid % PER_USER_RANGE;
+    u16 next_appid = KSU_INVALID_APPID;
 
     if (!ksu_is_manager_uid(uid))
         return;
-
-    u16 appid = uid % PER_USER_RANGE;
-
-    if (ksu_last_manager_appid == appid)
-        mark_another_manager = true;
 
     spin_lock(&ksu_manager_list_write_lock);
 
@@ -99,21 +92,15 @@ void ksu_unregister_manager(u32 uid)
             list_del_rcu(&pos->list);
             spin_unlock(&ksu_manager_list_write_lock);
             kfree_rcu(pos, rcu);
-            if (mark_another_manager)
-                ksu_last_manager_appid = KSU_INVALID_APPID;
+
+            if (ksu_last_manager_appid == appid)
+                ksu_last_manager_appid = next_appid;
             return;
         }
-
-        if (mark_another_manager) {
-            ksu_last_manager_appid = pos->appid;
-            mark_another_manager = false;
-        }
+        next_appid = pos->appid;
     }
 
     spin_unlock(&ksu_manager_list_write_lock);
-
-    if (mark_another_manager)
-        ksu_last_manager_appid = KSU_INVALID_APPID;
 }
 
 void ksu_unregister_manager_by_signature_index(u8 signature_index)

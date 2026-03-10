@@ -53,7 +53,7 @@ KSU_SRC := $(realpath $(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 LOCAL_GIT_EXISTS := $(shell test -e $(KSU_SRC)/../.git && echo 1 || echo 0)
 
 ifeq ($(LOCAL_GIT_EXISTS),0)
-$(error You should use $(REPO_NAME) as a git submodule instead of directly copying code)
+$(error You should build $(REPO_NAME) from a git repository (parent .git directory not found))
 endif
 
 define get_ksu_version_full

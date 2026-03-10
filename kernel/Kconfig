@@ -32,8 +32,9 @@ config KSU_MULTI_MANAGER_SUPPORT
 	help
 	  Enable multi KernelSU manager support.
 	  When enabled, the following managers are accepted in addition to KamiSU:
-	  KowSU, RKSU, SukiSU Ultra, KernelSU-Next, WildKSU, MamboSU,
-	  Official KernelSU, ReSukiSU, and a custom build-time hash.
+	  KOWX712, MamboSU, WildKSU, KernelSU-Next, pershoot,
+	  Official KernelSU (tiann), rsuntk/KernelSU, SukiSU-Ultra (ShirkNeko),
+	  ReSukiSU, and a custom build-time hash.
 	  Dynamic manager registration via ioctl is always available regardless
 	  of this option.
 

@@ -28,6 +28,10 @@
 #include "manager.h"
 #include "ksu.h"
 
+/* Minimum and maximum plausible sizes for a manager APK signing certificate */
+#define DYNAMIC_MANAGER_SIZE_MIN 0x100
+#define DYNAMIC_MANAGER_SIZE_MAX 0x1000
+
 // Dynamic sign configuration
 static struct dynamic_manager_config dynamic_manager = {
     .size = 0x300,
@@ -59,7 +63,7 @@ int ksu_handle_dynamic_manager(struct ksu_dynamic_manager_cmd *cmd)
 
     switch (cmd->operation) {
     case DYNAMIC_MANAGER_OP_SET:
-        if (cmd->size < 0x100 || cmd->size > 0x1000) {
+        if (cmd->size < DYNAMIC_MANAGER_SIZE_MIN || cmd->size > DYNAMIC_MANAGER_SIZE_MAX) {
             pr_err("invalid size: 0x%x\n", cmd->size);
             return -EINVAL;
         }
