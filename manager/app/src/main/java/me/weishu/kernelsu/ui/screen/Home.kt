@@ -17,9 +17,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
@@ -59,18 +60,38 @@ fun HomeScreen(navigator: DestinationsNavigator) {
                 .padding(bottom = innerPadding.calculateBottomPadding())
         ) {
             
-            // 1. BANNER CUSTOM (Full atas, melengkung bawah, pakai shadow)
+            // 1. BANNER CUSTOM (Full atas, sudut bawah lurus, tanpa shadow)
             HomeBanner(ksuVersion = ksuVersion)
 
-            // 2. STATUS INDICATOR & INSTALL BUTTON
-            StatusSection(ksuVersion = ksuVersion, navigator = navigator)
+            // 2 & 3. Blok konten dengan efek overlap di atas banner
+            // layout modifier menggeser blok ini 24.dp ke atas agar menimpa banner,
+            // background dengan sudut atas bulat menciptakan ilusi "concave" di banner.
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .layout { measurable, constraints ->
+                        val placeable = measurable.measure(constraints)
+                        val overlapPx = 24.dp.roundToPx()
+                        layout(placeable.width, placeable.height - overlapPx) {
+                            placeable.placeRelative(0, -overlapPx)
+                        }
+                    }
+                    .background(
+                        color = MaterialTheme.colorScheme.background,
+                        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+                    )
+                    .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
+            ) {
+                // STATUS INDICATOR & INSTALL BUTTON
+                StatusSection(ksuVersion = ksuVersion, navigator = navigator)
 
-            // 3. SATU CARDVIEW UNTUK SEMUA INFO (GRID)
-            UnifiedInfoGrid(
-                kernelVersion = kernelVersion,
-                managerVersionName = BuildConfig.VERSION_NAME,
-                managerVersionCode = BuildConfig.VERSION_CODE
-            )
+                // SATU CARDVIEW UNTUK SEMUA INFO (GRID)
+                UnifiedInfoGrid(
+                    kernelVersion = kernelVersion,
+                    managerVersionName = BuildConfig.VERSION_NAME,
+                    managerVersionCode = BuildConfig.VERSION_CODE
+                )
+            }
         }
     }
 }
@@ -102,13 +123,8 @@ fun HomeBanner(ksuVersion: Int?) {
             .fillMaxWidth()
             // Tinggi total = tinggi base banner + tinggi status bar HP
             .height(220.dp + statusBarPadding)
-            // Tambahkan Shadow (Efek Bayangan) dengan bentuk sudut bawah yang melengkung
-            .shadow(
-                elevation = 8.dp, 
-                shape = RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp)
-            )
-            // Potong konten banner agar tidak keluar dari area lengkung
-            .clip(RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp))
+            // Sudut bawah dibiarkan lurus; efek lengkungan ke dalam
+            // dibuat oleh blok konten yang menimpa banner di bawah.
     ) {
         // Latar Belakang Banner (Gambar atau Default Warna Bawaan)
         if (headerImageUri != null) {
@@ -128,11 +144,17 @@ fun HomeBanner(ksuVersion: Int?) {
                     .background(Color.Black.copy(alpha = 0.3f))
             )
         } else {
-            // Warna Default Bawaan jika tidak ada gambar (tanpa overlay hitam)
+            // Gradient Default Bawaan jika tidak ada gambar
+            val gradientTop = MaterialTheme.colorScheme.primary
+            val gradientBottom = MaterialTheme.colorScheme.primaryContainer
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.primaryContainer)
+                    .background(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(gradientTop, gradientBottom)
+                        )
+                    )
             )
         }
 
@@ -300,11 +322,11 @@ fun UnifiedInfoGrid(
                 Column(
                     modifier = Modifier
                         .weight(1f)
-                        .clickable { uriHandler.openUri("https://kernelsu.org/donate.html") }
+                        .clickable { uriHandler.openUri("https://t.me/Kaminarich_HeavenlyArchive/328") }
                         .padding(16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Icon(Icons.Filled.Favorite, contentDescription = null, tint = Color(0xFFE91E63))
+                    Icon(Icons.Filled.Favorite, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(text = stringResource(id = R.string.home_support_us), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
                 }
