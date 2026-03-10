@@ -4,6 +4,7 @@
 #include <linux/types.h>
 #include <linux/ioctl.h>
 #include "app_profile.h"
+#include "ksu.h"
 
 // Magic numbers for reboot hook to install fd
 #define KSU_INSTALL_MAGIC1 0xDEADBEEF
