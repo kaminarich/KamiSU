@@ -103,6 +103,39 @@ struct ksu_add_try_umount_cmd {
 #define KSU_UMOUNT_ADD 1 // add entry (path + flags)
 #define KSU_UMOUNT_DEL 2 // delete entry, strcmp
 
+// Other command structures
+struct ksu_get_full_version_cmd {
+    char version_full[KSU_FULL_VERSION_STRING]; // Output: full version string
+};
+
+struct ksu_hook_type_cmd {
+    char hook_type[32]; // Output: hook type string
+};
+
+struct ksu_enable_kpm_cmd {
+    __u8 enabled; // Output: true if KPM is enabled
+};
+
+#define DYNAMIC_MANAGER_OP_SET 0
+#define DYNAMIC_MANAGER_OP_GET 1
+#define DYNAMIC_MANAGER_OP_WIPE 2
+struct ksu_dynamic_manager_cmd {
+    unsigned int operation;
+    unsigned int size;
+    char hash[64];
+};
+
+struct ksu_manager_entry {
+    __u32 uid;
+    __u8 signature_index;
+} __attribute__((packed));
+
+struct ksu_get_managers_cmd {
+    __u16 count; // Input / Output: number of managers in array
+    __u16 total_count; // Output: total number of managers in requested list
+    struct ksu_manager_entry managers[]; // Output: Array of active managers
+} __attribute__((packed));
+
 // IOCTL command definitions
 #define KSU_IOCTL_GRANT_ROOT _IOC(_IOC_NONE, 'K', 1, 0)
 #define KSU_IOCTL_GET_INFO _IOC(_IOC_READ, 'K', 2, 0)
@@ -124,6 +157,18 @@ struct ksu_add_try_umount_cmd {
 #define KSU_IOCTL_ADD_TRY_UMOUNT _IOC(_IOC_WRITE, 'K', 18, 0)
 
 #define KSU_IOCTL_SET_INIT_PGRP _IOC(_IOC_NONE, 'K', 100, 0)
+
+// Extended IOCTL commands
+#define KSU_IOCTL_GET_FULL_VERSION _IOC(_IOC_READ, 'K', 100, 0)
+#define KSU_IOCTL_HOOK_TYPE _IOC(_IOC_READ, 'K', 101, 0)
+#define KSU_IOCTL_ENABLE_KPM _IOC(_IOC_READ, 'K', 102, 0)
+#define KSU_IOCTL_DYNAMIC_MANAGER _IOC(_IOC_READ | _IOC_WRITE, 'K', 103, 0)
+#define KSU_IOCTL_GET_MANAGERS _IOC(_IOC_READ | _IOC_WRITE, 'K', 105, 0)
+// Multi-manager support
+#ifdef CONFIG_KSU_MULTI_MANAGER_SUPPORT
+#define KSU_IOCTL_GET_HOOK_MODE _IOC(_IOC_READ, 'K', 98, 0)
+#define KSU_IOCTL_GET_VERSION_TAG _IOC(_IOC_READ, 'K', 99, 0)
+#endif
 
 // IOCTL handler types
 typedef int (*ksu_ioctl_handler_t)(void __user *arg);

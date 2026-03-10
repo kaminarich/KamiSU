@@ -17,4 +17,24 @@ config KSU_DEBUG
 	help
 	  Enable KernelSU debug mode.
 
+config KSU_ALLOWLIST_WORKAROUND
+	bool "KernelSU Session Keyring Init workaround"
+	depends on KSU
+	default n
+	help
+	  Enable session keyring init workaround for problematic devices.
+	  Useful for situations where the SU allowlist is not kept after a reboot.
+
+config KSU_MULTI_MANAGER_SUPPORT
+	bool "Multi KernelSU manager support"
+	depends on KSU
+	default n
+	help
+	  Enable multi KernelSU manager support.
+	  When enabled, the following managers are accepted in addition to KamiSU:
+	  KowSU, RKSU, SukiSU Ultra, KernelSU-Next, WildKSU, MamboSU,
+	  Official KernelSU, ReSukiSU, and a custom build-time hash.
+	  Dynamic manager registration via ioctl is always available regardless
+	  of this option.
+
 endmenu
