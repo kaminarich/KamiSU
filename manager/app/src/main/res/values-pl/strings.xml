@@ -2,9 +2,9 @@
 <resources>
     <string name="app_name" translatable="false">KernelSU</string>
     <string name="home">Strona główna</string>
-    <string name="home_not_installed">Nie zainstalowano</string>
+    <string name="home_not_installed">Nie działa</string>
     <string name="home_click_to_install">Kliknij, aby zainstalować</string>
-    <string name="home_working">Działa</string>
+    <string name="home_working">Działa bez zarzutu</string>
     <string name="home_working_version">Wersja: %d</string>
     <string name="home_superuser_count">Superużytkownicy: %d</string>
     <string name="home_module_count">Moduły: %d</string>
@@ -182,4 +182,6 @@
     <string name="color_teal">Turkusowy</string>
     <string name="color_pink">Różowy</string>
     <string name="color_brown">Brązowy</string>
+    <string name="running_flawlessly">Działa bez zarzutu</string>
+    <string name="home_status_not_installed">Nie działa</string>
 </resources>

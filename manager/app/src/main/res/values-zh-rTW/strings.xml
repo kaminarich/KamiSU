@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="home">首頁</string>
-    <string name="home_not_installed">尚未安裝</string>
+    <string name="home_not_installed">未運行</string>
     <string name="home_click_to_install">點選開始安裝</string>
-    <string name="home_working">已開始運作</string>
+    <string name="home_working">運行完美</string>
     <string name="home_working_version">版本：%d</string>
     <string name="home_superuser_count">授權：%d 個應用程式</string>
     <string name="home_unsupported">未受支援</string>
@@ -144,4 +144,6 @@
     <string name="refresh_release">鬆開刷新</string>
     <string name="refresh_refresh">正在刷新…</string>
     <string name="refresh_complete">刷新成功</string>
+    <string name="running_flawlessly">運行完美</string>
+    <string name="home_status_not_installed">未運行</string>
 </resources>

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="home_working">Működik</string>
+    <string name="home_working">Tökéletesen működik</string>
     <string name="home_working_version">Verzió: %d</string>
     <string name="home_module_count">Modulok: %d</string>
     <string name="home_unsupported_reason">A KernelSU jelenleg csak GKI kerneleket támogat</string>
@@ -45,7 +45,7 @@
     <string name="force_stop_app">Kényszerített leállítás</string>
     <string name="restart_app">újraindítás</string>
     <string name="home">Kezdőlap</string>
-    <string name="home_not_installed">Nincs telepítve</string>
+    <string name="home_not_installed">Nem működik</string>
     <string name="home_click_to_install">Kattintson a telepítéshez</string>
     <string name="home_superuser_count">Engedélyezett alkalmazások: %d</string>
     <string name="home_unsupported">Nem támogatott</string>
@@ -128,4 +128,6 @@
     <string name="settings_check_update">Frissítés ellenőrzése</string>
     <string name="settings_check_update_summary">Automatikusan keressen frissítéseket az alkalmazás megnyitásakor</string>
     <string name="log_saved">Mentett naplók</string>
+    <string name="running_flawlessly">Tökéletesen működik</string>
+    <string name="home_status_not_installed">Nem működik</string>
 </resources>

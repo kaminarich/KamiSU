@@ -56,7 +56,7 @@
     <string name="module_uninstall_confirm">%s ಮಾಡ್ಯೂಲ್ ಅನ್ನು ಅಸ್ಥಾಪಿಸಲು ನೀವು ಖಚಿತವಾಗಿ ಬಯಸುವಿರಾ\?</string>
     <string name="module_uninstall_failed">ಅನ್‌ಇನ್‌ಸ್ಟಾಲ್ ಮಾಡಲು ವಿಫಲವಾಗಿದೆ: %s</string>
     <string name="superuser">ಸೂಪರ್ಯೂಸರ್</string>
-    <string name="home_working">ಕೆಲಸ ಮಾಡುತ್ತಿದೆ</string>
+    <string name="home_working">ಅತ್ಯುತ್ತಮವಾಗಿ ಕಾರ್ಯನಿರ್ವಹಿಸುತ್ತಿದೆ</string>
     <string name="module_failed_to_disable">ಮಾಡ್ಯೂಲ್ ಅನ್ನು ನಿಷ್ಕ್ರಿಯಗೊಳಿಸಲು ವಿಫಲವಾಗಿದೆ: %s</string>
     <string name="module_empty">ಮಾಡ್ಯೂಲ್ ಅನ್ನು ಸ್ಥಾಪಿಸಲಾಗಿಲ್ಲ</string>
     <string name="home_kernel">ಕರ್ನಲ್</string>
@@ -66,4 +66,6 @@
     <string name="home_manager_version">ಮ್ಯಾನೇಜರ್ ವರ್ಷನ್</string>
     <string name="new_version_available">ಹೊಸ ಆವೃತ್ತಿ: %s ಲಭ್ಯವಿದೆ, ಅಪ್‌ಗ್ರೇಡ್ ಮಾಡಲು ಕ್ಲಿಕ್ ಮಾಡಿ</string>
     <string name="save_log">ಲಾಗ್ಗಳನ್ನು ಉಳಿಸಿ</string>
+    <string name="running_flawlessly">ಅತ್ಯುತ್ತಮವಾಗಿ ಕಾರ್ಯನಿರ್ವಹಿಸುತ್ತಿದೆ</string>
+    <string name="home_status_not_installed">ಕೆಲಸ ಮಾಡುತ್ತಿಲ್ಲ</string>
 </resources>

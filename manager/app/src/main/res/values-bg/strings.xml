@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="home">Начало</string>
-    <string name="home_not_installed">Не е инсталирано</string>
+    <string name="home_not_installed">Не работи</string>
     <string name="home_click_to_install">Натиснете да инсталирате</string>
-    <string name="home_working">Работи</string>
+    <string name="home_working">Работи перфектно</string>
     <string name="home_working_version">Версия: %d</string>
     <string name="home_superuser_count">Суперпотребители: %d</string>
     <string name="home_module_count">Модули: %d</string>
@@ -178,4 +178,6 @@
     <string name="color_teal">Тил</string>
     <string name="color_pink">Розово</string>
     <string name="color_brown">Кафяво</string>
+    <string name="running_flawlessly">Работи перфектно</string>
+    <string name="home_status_not_installed">Не работи</string>
 </resources>

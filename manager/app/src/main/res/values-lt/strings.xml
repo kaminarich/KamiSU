@@ -56,10 +56,10 @@
     <string name="restart_app">Perkrauti</string>
     <string name="failed_to_update_sepolicy">Nepavyko atnaujinti SELinux taisyklių: %s</string>
     <string name="home">Namai</string>
-    <string name="home_not_installed">Neįdiegta</string>
+    <string name="home_not_installed">Neveikia</string>
     <string name="home_unsupported_reason">KernelSU dabar palaiko tik GKI branduolius</string>
     <string name="home_click_to_install">Spustelėkite norėdami įdiegti</string>
-    <string name="home_working">Veikia</string>
+    <string name="home_working">Veikia puikiai</string>
     <string name="home_superuser_count">Supernaudotojai: %d</string>
     <string name="home_working_version">Versija: %d</string>
     <string name="home_unsupported">Nepalaikoma</string>
@@ -80,4 +80,6 @@
     <string name="module_changelog">Keitimų žurnalas</string>
     <string name="require_kernel_version">Ši KernelSU versija %d yra per žema, kad šis vadybininkas galėtų tinkamai funkcionuoti. Prašome atsinaujinti į versiją %d ar aukščiau!</string>
     <string name="save_log">Saglabāt Žurnālus</string>
+    <string name="running_flawlessly">Veikia puikiai</string>
+    <string name="home_status_not_installed">Neveikia</string>
 </resources>

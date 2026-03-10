@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="home">Beranda</string>
-    <string name="home_not_installed">Tidak terinstal</string>
+    <string name="home_not_installed">Tidak berfungsi</string>
     <string name="home_click_to_install">Klik untuk menginstal</string>
-    <string name="home_working">Berfungsi</string>
+    <string name="home_working">Berjalan sempurna</string>
     <string name="home_working_version">Versi: %d</string>
     <string name="home_superuser_count">SuperUser: %d</string>
     <string name="home_module_count">Modul: %d</string>
@@ -166,4 +166,6 @@
     <string name="module_repos_sort_update_first">Pembaruan terbaru</string>
     <string name="module_repos_sort_name">Urutkan berdasarkan nama</string>
     <string name="module_repos_source_code">Kode sumber</string>
+    <string name="running_flawlessly">Berjalan sempurna</string>
+    <string name="home_status_not_installed">Tidak berfungsi</string>
 </resources>

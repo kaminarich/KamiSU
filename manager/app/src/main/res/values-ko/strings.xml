@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="home">홈</string>
-    <string name="home_not_installed">설치되지 않음</string>
+    <string name="home_not_installed">작동하지 않음</string>
     <string name="home_click_to_install">이 곳을 눌러 설치하기</string>
-    <string name="home_working">작동 중</string>
+    <string name="home_working">완벽하게 작동 중</string>
     <string name="home_working_version">버전: %d</string>
     <string name="home_superuser_count">슈퍼유저: %d개</string>
     <string name="home_module_count">모듈: %d개</string>
@@ -151,4 +151,6 @@
     <string name="refresh_refresh">새로 고침 중…</string>
     <string name="refresh_complete">새로 고침 성공</string>
     <string name="install_select_partition">파티션 선택</string>
+    <string name="running_flawlessly">완벽하게 작동 중</string>
+    <string name="home_status_not_installed">작동하지 않음</string>
 </resources>

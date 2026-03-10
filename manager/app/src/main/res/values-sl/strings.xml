@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="home_click_to_install">Klikni za namestitev</string>
-    <string name="home_working">V obdelavi</string>
+    <string name="home_working">Deluje brezhibno</string>
     <string name="home_working_version">Verzija: %d</string>
     <string name="home_superuser_count">Superuporabniki: %d</string>
     <string name="home_unsupported_reason">KernelSU podpira samo GKI kernele</string>
@@ -77,7 +77,7 @@
     <string name="module_start_downloading">Začni z nalaganjem: %s</string>
     <string name="new_version_available">Na voljo je nova verzija: %s, kliknite za nadgradnjo</string>
     <string name="failed_to_update_sepolicy">Napaka pri posodobitvi SELinux pravil za: %s</string>
-    <string name="home_not_installed">Ni nameščeno</string>
+    <string name="home_not_installed">Ne deluje</string>
     <string name="selinux_status_enforcing">Enforcing</string>
     <string name="selinux_status_permissive">Permissive</string>
     <string name="app_profile_template_create">Ustvari predlogo</string>
@@ -102,4 +102,6 @@
     <string name="app_profile_import_export">Uvoz/Izvoz</string>
     <string name="module_changelog_failed">Napaka pri pridobivanju dnevnika sprememb: %s</string>
     <string name="save_log">Shrani Dnevnike</string>
+    <string name="running_flawlessly">Deluje brezhibno</string>
+    <string name="home_status_not_installed">Ne deluje</string>
 </resources>

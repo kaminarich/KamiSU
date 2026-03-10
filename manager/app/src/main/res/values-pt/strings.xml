@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="home_not_installed">Não instalado</string>
+    <string name="home_not_installed">Não está a funcionar</string>
     <string name="home">Início</string>
     <string name="home_click_to_install">Clique para instalar</string>
-    <string name="home_working">Funcionando</string>
+    <string name="home_working">A funcionar perfeitamente</string>
     <string name="home_superuser_count">Super Usuário: %d</string>
     <string name="home_module_count">Módulos: %d</string>
     <string name="home_working_version">Versão: %d</string>
@@ -79,4 +79,6 @@
     <string name="new_version_available">Nova versão: %s está disponível, clique para baixar</string>
     <string name="require_kernel_version">A versão atual do KernelSU %d é muito baixa para o gerenciador funcionar corretamente. Atualize para a versão %d ou superior!</string>
     <string name="save_log">Salvar Registros</string>
+    <string name="running_flawlessly">A funcionar perfeitamente</string>
+    <string name="home_status_not_installed">Não está a funcionar</string>
 </resources>
