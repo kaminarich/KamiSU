@@ -30,7 +30,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootNavGraph
+import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.ramcosta.composedestinations.generated.destinations.InstallScreenDestination
 import me.weishu.kernelsu.BuildConfig
@@ -41,8 +41,7 @@ import me.weishu.kernelsu.getKernelVersion
 import me.weishu.kernelsu.ui.util.getHeaderImage
 import me.weishu.kernelsu.ui.util.saveHeaderImage
 
-@RootNavGraph(start = true)
-@Destination
+@Destination<RootGraph>(start = true)
 @Composable
 fun HomeScreen(navigator: DestinationsNavigator) {
     val isManager = Natives.isManager
