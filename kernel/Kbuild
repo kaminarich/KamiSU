@@ -42,7 +42,7 @@ obj-$(CONFIG_KSU) += kernelsu.o
 
 REPO_OWNER := kaminarich
 REPO_NAME := KamiSU
-REPO_BRANCH := main
+REPO_BRANCH := master
 KSU_VERSION_API := 1.0.0
 
 GIT_BIN := /usr/bin/env PATH="$$PATH":/usr/bin:/usr/local/bin git
