@@ -6,7 +6,7 @@ Original Author: kaminarich. Do not remove credit under GPLv2 compliance.
 
 ### Kernel-based Android Root Solution from KamiSU
 
-[![Telegram](https://img.shields.io/badge/Telegram-KamiSU-blue?style=for-the-badge&logo=telegram)](https://t.me/KamiSkizofrenia)
+[![Telegram](https://img.shields.io/badge/Telegram-KamiSU-blue?style=for-the-badge&logo=telegram)](https://t.me/kaminarich)
 
 ---
 
@@ -115,7 +115,7 @@ Full hashes are defined in [`kernel/manager_sign.h`](kernel/manager_sign.h).
 
 ## Discussion
 
-- Telegram Group: [@KamiSkizofrenia](https://t.me/KamiSkizofrenia)
+- Telegram Channel: [@KamiSkizofrenia](https://t.me/kaminarich_here)
 
 ---
 
