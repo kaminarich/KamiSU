@@ -102,6 +102,7 @@ import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material.icons.filled.ViewColumn
 import androidx.compose.runtime.saveable.rememberSaveable
 import me.weishu.kernelsu.R
+import me.weishu.kernelsu.ui.component.TonalCard
 import me.weishu.kernelsu.ui.theme.ColorMode
 import me.weishu.kernelsu.ui.theme.ThemeController
 import me.weishu.kernelsu.ui.util.getLayoutStyle

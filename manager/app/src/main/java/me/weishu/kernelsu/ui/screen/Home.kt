@@ -140,7 +140,7 @@ fun HomeBanner(ksuVersion: Int?) {
         IconButton(
             onClick = { launcher.launch(arrayOf("image/*")) },
             modifier = Modifier
-                .align(Alignment.TopLeft)
+                .align(Alignment.TopStart)
                 // Padding atas ditambah statusBarPadding agar turun ke bawah jam
                 .padding(top = 16.dp + statusBarPadding, start = 8.dp) 
         ) {

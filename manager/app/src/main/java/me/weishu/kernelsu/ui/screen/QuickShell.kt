@@ -46,6 +46,7 @@ import kotlinx.coroutines.launch
 // libsu
 import com.topjohnwu.superuser.CallbackList
 import com.topjohnwu.superuser.Shell
+import me.weishu.kernelsu.ui.component.TonalCard
 
 @Destination<RootGraph>
 @Composable
