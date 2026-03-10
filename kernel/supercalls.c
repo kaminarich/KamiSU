@@ -248,7 +248,7 @@ static int do_get_manager_appid(void __user *arg)
 {
     struct ksu_get_manager_appid_cmd cmd;
 
-    cmd.appid = ksu_get_manager_appid();
+    cmd.appid = ksu_last_manager_appid;
 
     if (copy_to_user(arg, &cmd, sizeof(cmd))) {
         pr_err("get_manager_appid: copy_to_user failed\n");
@@ -777,10 +777,10 @@ static int ksu_handle_sys_reboot(int magic1, int magic2, unsigned int cmd, void 
         if (current_uid().val != 0)
             return 0;
 
-        pr_info("sys_reboot: ksu_set_manager_appid to: %d\n", cmd);
-        ksu_set_manager_appid(cmd);
+        pr_info("sys_reboot: ksu_register_manager appid: %d\n", cmd);
+        ksu_register_manager(cmd, 0);
 
-        if (cmd == ksu_get_manager_appid()) {
+        if (cmd == ksu_last_manager_appid) {
             if (copy_to_user((void __user *)*arg, &reply, sizeof(reply)))
             	pr_info("sys_reboot: reply fail\n");
         }

@@ -6,10 +6,17 @@
 #include <linux/cred.h>
 
 #define KERNEL_SU_VERSION KSU_VERSION
+#define KERNEL_SU_OPTION 0xDEADBEEF
 
 #define EVENT_POST_FS_DATA 1
 #define EVENT_BOOT_COMPLETED 2
 #define EVENT_MODULE_MOUNTED 3
+
+// kernel su version full string
+#ifndef KSU_VERSION_FULL
+#define KSU_VERSION_FULL "v1.x-00000000@KamiSU"
+#endif
+#define KSU_FULL_VERSION_STRING 255
 
 static inline int startswith(char *s, char *prefix)
 {

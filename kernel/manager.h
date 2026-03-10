@@ -5,34 +5,25 @@
 #include <linux/types.h>
 #include "allowlist.h"
 
+#define PER_USER_RANGE 100000
 #define KSU_INVALID_APPID -1
+extern u16 ksu_last_manager_appid;
 
-extern uid_t ksu_manager_appid; // DO NOT DIRECT USE
-
-static inline bool ksu_is_manager_appid_valid()
+static inline void ksu_mark_manager(u32 uid)
 {
-    return ksu_manager_appid != KSU_INVALID_APPID;
+    ksu_last_manager_appid = uid % PER_USER_RANGE;
 }
 
-static inline bool is_manager()
-{
-    return unlikely(ksu_manager_appid == current_uid().val % PER_USER_RANGE);
-}
-
-static inline uid_t ksu_get_manager_appid()
-{
-    return ksu_manager_appid;
-}
-
-static inline void ksu_set_manager_appid(uid_t appid)
-{
-    ksu_manager_appid = appid;
-}
-
-static inline void ksu_invalidate_manager_uid()
-{
-    ksu_manager_appid = KSU_INVALID_APPID;
-}
+extern bool is_manager(void);
+bool ksu_is_manager_appid(u16 appid);
+extern bool ksu_is_manager_uid(u32 uid);
+extern void ksu_register_manager(u32 uid, u8 signature_index);
+extern void ksu_unregister_manager(u32 uid);
+extern void ksu_unregister_manager_by_signature_index(u8 signature_index);
+extern int ksu_get_manager_signature_index_by_appid(u16 appid);
+extern bool ksu_has_manager(void);
 
 int ksu_observer_init(void);
-#endif
+void ksu_observer_exit(void);
+
+#endif /* __KSU_H_KSU_MANAGER */
