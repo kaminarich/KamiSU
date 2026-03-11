@@ -6,6 +6,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -27,8 +28,11 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import me.weishu.kernelsu.getKernelRelease
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.ramcosta.composedestinations.annotation.Destination
@@ -36,10 +40,8 @@ import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.ramcosta.composedestinations.generated.destinations.InstallScreenDestination
 import me.weishu.kernelsu.BuildConfig
-import me.weishu.kernelsu.KernelVersion
 import me.weishu.kernelsu.Natives
 import me.weishu.kernelsu.R
-import me.weishu.kernelsu.getKernelVersion
 import me.weishu.kernelsu.ui.component.PowerMenuButton
 import me.weishu.kernelsu.ui.util.getHeaderImage
 import me.weishu.kernelsu.ui.util.saveHeaderImage
@@ -49,7 +51,7 @@ import me.weishu.kernelsu.ui.util.saveHeaderImage
 fun HomeScreen(navigator: DestinationsNavigator) {
     val isManager = Natives.isManager
     val ksuVersion = if (isManager) Natives.version else null
-    val kernelVersion = getKernelVersion()
+    val kernelRelease = getKernelRelease()
     val scrollState = rememberScrollState()
 
     // Menghilangkan TopAppBar bawaan (Header)
@@ -89,7 +91,7 @@ fun HomeScreen(navigator: DestinationsNavigator) {
 
                 // SATU CARDVIEW UNTUK SEMUA INFO (GRID)
                 UnifiedInfoGrid(
-                    kernelVersion = kernelVersion,
+                    kernelRelease = kernelRelease,
                     managerVersionName = BuildConfig.VERSION_NAME,
                     managerVersionCode = BuildConfig.VERSION_CODE
                 )
@@ -133,6 +135,7 @@ fun HomeBanner(ksuVersion: Int?) {
             .height(220.dp + statusBarPadding)
             // Sudut bawah dibiarkan lurus; efek lengkungan ke dalam
             // dibuat oleh blok konten yang menimpa banner di bawah.
+            .clickable { launcher.launch(arrayOf("image/*")) }
     ) {
         // Latar Belakang Banner: gunakan header_bg.webp sebagai default
         if (headerImageUri != null) {
@@ -167,15 +170,6 @@ fun HomeBanner(ksuVersion: Int?) {
             )
         }
 
-        // Logo KamiSU (Tengah Banner) - gambar ic_kamisu.png
-        Image(
-            painter = painterResource(id = R.drawable.ic_kamisu),
-            contentDescription = "KamiSU Logo",
-            modifier = Modifier
-                .size(80.dp)
-                .align(Alignment.Center)
-        )
-
         // Teks KamiSU (Kanan Atas) + Status Not Installed (Kecil di Bawahnya)
         Column(
             modifier = Modifier
@@ -203,7 +197,7 @@ fun HomeBanner(ksuVersion: Int?) {
             }
         }
 
-        // Tombol di kanan bawah banner: [Power] [Ganti Gambar]
+        // Tombol di kanan bawah banner: [Power]
         Row(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
@@ -213,15 +207,6 @@ fun HomeBanner(ksuVersion: Int?) {
         ) {
             // Tombol Power Menu (hanya tampil jika KSU aktif)
             PowerMenuButton(iconTint = iconTint)
-
-            // Tombol Ganti Gambar Banner
-            IconButton(onClick = { launcher.launch(arrayOf("image/*")) }) {
-                Icon(
-                    imageVector = Icons.Filled.Image,
-                    contentDescription = "Change Banner",
-                    tint = iconTint
-                )
-            }
         }
     }
 }
@@ -281,7 +266,7 @@ fun StatusSection(ksuVersion: Int?, navigator: DestinationsNavigator) {
 
 @Composable
 fun UnifiedInfoGrid(
-    kernelVersion: KernelVersion,
+    kernelRelease: String,
     managerVersionName: String,
     managerVersionCode: Int
 ) {
@@ -315,7 +300,16 @@ fun UnifiedInfoGrid(
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(text = stringResource(id = R.string.home_kernel_version), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.outline)
                     Spacer(modifier = Modifier.height(2.dp))
-                    Text(text = kernelVersion.toString(), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+                    Text(
+                        text = kernelRelease,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
+                        maxLines = 1,
+                        modifier = Modifier
+                            .basicMarquee()
+                            .semantics { contentDescription = kernelRelease }
+                    )
                 }
 
                 VerticalDivider(modifier = Modifier.padding(vertical = 12.dp))

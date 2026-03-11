@@ -50,7 +50,7 @@ try:
             repo_url = GITHUB_EVENT['repository']['html_url']
             upstream_diff = f'[Upstream Update]({repo_url}/compare/{before_commit}...{upstream_commit})\n'
     elif 'head_commit' in GITHUB_EVENT:
-        msg = GITHUB_EVENT["head_commt"]["msg"]
+        msg = GITHUB_EVENT["head_commit"]["message"]
         if len(msg) > 256:
             msg = msg[:253] + '...'
         commit_message = f'```\n{msg.strip()}\n```\n'

@@ -226,5 +226,6 @@ jobs:
         run: |
           pip3 install telethon
           export VERSION=$(git rev-list --count HEAD)
-          APK_RELEASE=apk/release/*.apk
+          APK_RELEASE=$(find . -maxdepth 6 -name "*.apk" -path "*/release/*" | tr '\n' ' ')
+          echo "[+] APK files: $APK_RELEASE"
           python3 $GITHUB_WORKSPACE/scripts/ksubot.py $APK_RELEASE
