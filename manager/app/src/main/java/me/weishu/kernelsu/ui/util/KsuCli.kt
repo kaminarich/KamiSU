@@ -410,6 +410,11 @@ fun reboot(reason: String = "") {
     ShellUtils.fastCmd(shell, "/system/bin/svc power reboot $reason || /system/bin/reboot $reason")
 }
 
+fun powerOff() {
+    val shell = getRootShell()
+    ShellUtils.fastCmd(shell, "/system/bin/svc power shutdown || /system/bin/reboot -p")
+}
+
 fun flashAnyKernelZip(
     uri: Uri,
     onStdout: (String) -> Unit,

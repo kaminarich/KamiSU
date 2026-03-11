@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="home">خانه</string>
-    <string name="home_not_installed">نصب نشده است</string>
+    <string name="home_not_installed">کار نمی‌کند</string>
     <string name="home_click_to_install">برای نصب ضربه بزنید</string>
-    <string name="home_working">به درستی کار می‌کند</string>
+    <string name="home_working">به خوبی در حال اجرا است</string>
     <string name="home_working_version">نسخه: %d</string>
     <string name="home_superuser_count">برنامه های با دسترسی روت: %d</string>
     <string name="home_module_count">ماژول‌ها: %d</string>
@@ -64,4 +64,6 @@
     <string name="profile_namespace_individual">تکی</string>
     <string name="profile_umount_modules">جداکردن ماژول ها</string>
     <string name="save_log">ذخیره گزارش‌ها</string>
+    <string name="running_flawlessly">به خوبی در حال اجرا است</string>
+    <string name="home_status_not_installed">کار نمی‌کند</string>
 </resources>

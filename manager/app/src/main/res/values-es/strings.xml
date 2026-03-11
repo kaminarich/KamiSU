@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="home">Inicio</string>
-    <string name="home_not_installed">No instalado</string>
+    <string name="home_not_installed">No funciona</string>
     <string name="home_click_to_install">Haz clic para instalar</string>
-    <string name="home_working">Funcionando</string>
+    <string name="home_working">Funcionando perfectamente</string>
     <string name="home_working_version">Versión: %d</string>
     <string name="home_superuser_count">Superusuarios: %d</string>
     <string name="home_module_count">Módulos: %d</string>
@@ -126,4 +126,6 @@
     <string name="settings_check_update_summary">Comprobación automática de actualizaciones al abrir la aplicación</string>
     <string name="enable_web_debugging_summary">Puede ser usado para depurar WebUI, por favor habilítalo sólo cuando sea necesario.</string>
     <string name="settings_restore_stock_image_message">Restaurar la imagen de fábrica stock (Si existe una copia de seguridad), por lo general se utiliza antes de OTA; si necesita desinstalar KernelSU, por favor, utilice \"Desinstalar permanentemente\".</string>
+    <string name="running_flawlessly">Funcionando perfectamente</string>
+    <string name="home_status_not_installed">No funciona</string>
 </resources>

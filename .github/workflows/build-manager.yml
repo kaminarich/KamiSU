@@ -159,6 +159,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    # Only upload Release builds (Manager and Spoofed-Manager); skip Debug
     strategy:
       matrix:
         spoofed: ["true","false"]
@@ -189,18 +190,13 @@ jobs:
         run: |
           if [ "${{ matrix.spoofed }}" == "true" ]; then
             echo "title=Spoofed-Manager" >> $GITHUB_OUTPUT
-            echo "topicid=${{ vars.MESSAGE_SPOOFED_THREAD_ID }}" >> $GITHUB_OUTPUT
+            echo "topicid=${{ vars.MESSAGE_SPOOFED_THREAD_ID || '328' }}" >> $GITHUB_OUTPUT
           else
             echo "title=Manager" >> $GITHUB_OUTPUT
-            echo "topicid=${{ vars.MESSAGE_THREAD_ID }}" >> $GITHUB_OUTPUT
+            echo "topicid=${{ vars.MESSAGE_THREAD_ID || '328' }}" >> $GITHUB_OUTPUT
           fi
 
-      - name: Download Debug artifact
-        uses: actions/download-artifact@v7
-        with:
-          name: ${{ steps.determine.outputs.title }}-Debug
-          path: .
-
+      # Only download the Release artifact — Debug is not sent to Telegram
       - name: Download Release artifact
         uses: actions/download-artifact@v7
         with:
@@ -226,9 +222,10 @@ jobs:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           TITLE: ${{ steps.determine.outputs.title }}
           BRANCH: ${{ github.ref_name }}
+          GITHUB_EVENT: ${{ toJSON(github.event) }}
         run: |
           pip3 install telethon
           export VERSION=$(git rev-list --count HEAD)
-          APK_DEBUG=apk/debug/*.apk
-          APK_RELEASE=apk/release/*.apk
-          python3 $GITHUB_WORKSPACE/scripts/ksubot.py $APK_DEBUG $APK_RELEASE
+          APK_RELEASE=$(find . -maxdepth 8 -name "*.apk" -path "*/release/*" | tr '\n' ' ')
+          echo "[+] APK files: $APK_RELEASE"
+          python3 $GITHUB_WORKSPACE/scripts/ksubot.py $APK_RELEASE

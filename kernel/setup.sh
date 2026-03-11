@@ -2,22 +2,22 @@
 set -eu
 
 GKI_ROOT=$(pwd)
-KAMISU_REPO="kaminarich/KamiSU"
-BASE_OWNER="pershoot"
-BASE_REPO="KernelSU-Next"
-BASE_BRANCH="dev-susfs"
+OWNER="kaminarich"
+REPO="KamiSU"
 
 display_usage() {
     echo "Usage: $0 [--cleanup | <commit-or-tag>]"
-    echo "  --cleanup:       Cleans up previous modifications made by the script."
-    echo "  <commit-or-tag>: Sets up or updates KamiSU to specified tag or commit."
-    echo "  -h, --help:      Displays this usage information."
-    echo "  (no args):       Sets up or updates KamiSU to the latest tagged version."
+    echo "  --cleanup:              Cleans up previous modifications made by the script."
+    echo "  <commit-or-tag>:        Sets up or updates KamiSU to specified tag or commit."
+    echo "  -h, --help:             Displays this usage information."
+    echo "  (no args):              Sets up or updates KamiSU to the latest tagged version."
 }
 
 initialize_variables() {
     if test -d "$GKI_ROOT/common/drivers"; then
         DRIVER_DIR="$GKI_ROOT/common/drivers"
+    elif test -d "$GKI_ROOT/aosp/drivers"; then
+        DRIVER_DIR="$GKI_ROOT/aosp/drivers"
     elif test -d "$GKI_ROOT/drivers"; then
         DRIVER_DIR="$GKI_ROOT/drivers"
     else
@@ -29,47 +29,45 @@ initialize_variables() {
     DRIVER_KCONFIG=$DRIVER_DIR/Kconfig
 }
 
+# Reverts modifications made by this script
 perform_cleanup() {
     echo "[+] Cleaning up..."
     [ -L "$DRIVER_DIR/kernelsu" ] && rm "$DRIVER_DIR/kernelsu" && echo "[-] Symlink removed."
     grep -q "kernelsu" "$DRIVER_MAKEFILE" && sed -i '/kernelsu/d' "$DRIVER_MAKEFILE" && echo "[-] Makefile reverted."
     grep -q "drivers/kernelsu/Kconfig" "$DRIVER_KCONFIG" && sed -i '/drivers\/kernelsu\/Kconfig/d' "$DRIVER_KCONFIG" && echo "[-] Kconfig reverted."
-    if [ -d "$GKI_ROOT/$BASE_REPO" ]; then
-        rm -rf "$GKI_ROOT/$BASE_REPO" && echo "[-] $BASE_REPO directory deleted."
+    if [ -d "$GKI_ROOT/$REPO" ]; then
+        rm -rf "$GKI_ROOT/$REPO" && echo "[-] $REPO directory deleted."
     fi
 }
 
+# Sets up or updates KamiSU environment
 setup_kamisu() {
-    echo "[+] Setting up KamiSU (base: $BASE_REPO@$BASE_BRANCH)..."
+    echo "[+] Setting up $REPO..."
+    test -d "$GKI_ROOT/$REPO" || git clone "https://github.com/$OWNER/$REPO" && echo "[+] Repository cloned."
+    cd "$GKI_ROOT/$REPO"
+    git stash && echo "[-] Stashed current changes."
 
-    # 1. Clone / update base KernelSU-Next
-    if ! test -d "$GKI_ROOT/$BASE_REPO"; then
-        git clone "https://github.com/$BASE_OWNER/$BASE_REPO" "$GKI_ROOT/$BASE_REPO" && echo "[+] Repository cloned."
-    else
-        echo "[+] Repository already exists, skipping clone."
+    BRANCH="$(git rev-parse --abbrev-ref origin/HEAD | sed 's@^origin/@@')"
+    if [ "$(git status | grep -Po 'v\d+(\.\d+)*' | head -n1)" ]; then
+        git checkout $BRANCH && echo "[-] Switched to $BRANCH branch."
     fi
 
-    cd "$GKI_ROOT/$BASE_REPO"
-    git stash && echo "[-] Stashed current changes."
-    git fetch origin && echo "[+] Fetched origin."
-    git checkout "$BASE_BRANCH" && echo "[-] Checked out $BASE_BRANCH."
-    git pull origin "$BASE_BRANCH" && echo "[+] Repository updated."
-
-    # 2. Overlay KamiSU-specific files on top of KernelSU-Next
-    echo "[+] Overlaying KamiSU customizations..."
-    KAMISU_RAW="https://raw.githubusercontent.com/$KAMISU_REPO/master/kernel"
-    for f in manager_sign.h apk_sign.c apk_sign.h manager.h; do
-        curl -LSs "$KAMISU_RAW/$f" -o "$GKI_ROOT/$BASE_REPO/kernel/$f" && echo "[+] Overlaid $f"
-    done
-
-    # 3. Symlink, Makefile, Kconfig
+    git pull && echo "[+] Repository updated."
+    if [ -z "${1-}" ]; then
+        git checkout "$(git describe --abbrev=0 --tags)" && echo "[-] Checked out latest tag."
+    else
+        git checkout "$1" && echo "[-] Checked out $1." || echo "[-] Failed to checkout $1, staying on current branch"
+    fi
     cd "$DRIVER_DIR"
-    ln -sf "$(realpath --relative-to="$DRIVER_DIR" "$GKI_ROOT/$BASE_REPO/kernel")" "kernelsu" && echo "[+] Symlink created."
+    ln -sf "$(realpath --relative-to="$DRIVER_DIR" "$GKI_ROOT/$REPO/kernel")" "kernelsu" && echo "[+] Symlink created."
+
+    # Add entries in Makefile and Kconfig if not already existing
     grep -q "kernelsu" "$DRIVER_MAKEFILE" || printf "\nobj-\$(CONFIG_KSU) += kernelsu/\n" >> "$DRIVER_MAKEFILE" && echo "[+] Modified Makefile."
     grep -q "source \"drivers/kernelsu/Kconfig\"" "$DRIVER_KCONFIG" || sed -i "/endmenu/i\source \"drivers/kernelsu/Kconfig\"" "$DRIVER_KCONFIG" && echo "[+] Modified Kconfig."
     echo '[+] Done.'
 }
 
+# Process command-line arguments
 if [ "$#" -eq 0 ]; then
     initialize_variables
     setup_kamisu

@@ -42,3 +42,7 @@ fun getKernelVersion(): KernelVersion {
         return parseKernelVersion(it)
     }
 }
+
+fun getKernelRelease(): String {
+    return Os.uname().release
+}

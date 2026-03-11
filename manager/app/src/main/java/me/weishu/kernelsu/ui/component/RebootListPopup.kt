@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.Build
 import android.os.PowerManager
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PowerSettingsNew
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -15,9 +16,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import me.weishu.kernelsu.R
+import me.weishu.kernelsu.ui.util.powerOff
 import me.weishu.kernelsu.ui.util.reboot
 
 @Composable
@@ -66,6 +70,49 @@ fun RebootListPopup() {
                 expanded = false
                 reboot(reason)
             }
+        }
+    }
+}
+
+/**
+ * Power menu button: shows Reboot options + Power off.
+ * Intended for the home banner bottom-right area.
+ * Only rendered when KSU is active (needs root for shell commands).
+ */
+@Composable
+fun PowerMenuButton(
+    modifier: Modifier = Modifier,
+    iconTint: Color = Color.Unspecified
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    KsuIsValid {
+        IconButton(
+            onClick = { expanded = true },
+            modifier = modifier
+        ) {
+            Icon(
+                imageVector = Icons.Filled.PowerSettingsNew,
+                contentDescription = stringResource(id = R.string.power_menu),
+                tint = iconTint
+            )
+        }
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            RebootDropdownItems { reason ->
+                expanded = false
+                reboot(reason)
+            }
+            DropdownMenuItem(
+                text = { Text("  " + stringResource(R.string.power_off)) },
+                onClick = {
+                    expanded = false
+                    powerOff()
+                }
+            )
         }
     }
 }

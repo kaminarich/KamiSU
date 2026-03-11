@@ -40,7 +40,7 @@ KamiSU is a kernel-based root solution for Android GKI devices. It works in kern
 **main branch**
 
 ```
-curl -LSs "[https://raw.githubusercontent.com/kaminarich/KamiSU/master/kernel/setup.sh](https://raw.githubusercontent.com/kaminarich/KamiSU/master/kernel/setup.sh)" | bash -s master
+curl -LSs "https://raw.githubusercontent.com/kaminarich/KamiSU/master/kernel/setup.sh" | bash -s master
 ```
 
 
