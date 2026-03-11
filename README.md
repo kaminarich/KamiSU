@@ -2,7 +2,7 @@
 
 Original Author: kaminarich. Do not remove credit under GPLv2 compliance.
 
-[![KamiSU Banner](https://raw.githubusercontent.com/kaminarich/KamiSU/refs/heads/master/manager/app/src/main/res/drawable/ic_kamisu.xml)](https://raw.githubusercontent.com/kaminarich/KamiSU/refs/heads/master/manager/app/src/main/res/drawable/ic_kamisu.xml)
+[![KamiSU Banner](https://raw.githubusercontent.com/kaminarich/KamiSU/refs/heads/master/manager/app/src/main/res/drawable/header_bg.webp)](https://raw.githubusercontent.com/kaminarich/KamiSU/refs/heads/master/manager/app/src/main/res/drawable/header_bg.webp)
 
 ### Kernel-based Android Root Solution from KamiSU
 
