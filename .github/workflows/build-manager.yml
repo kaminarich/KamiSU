@@ -159,6 +159,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    # Only upload Release builds (Manager and Spoofed-Manager); skip Debug
     strategy:
       matrix:
         spoofed: ["true","false"]
@@ -195,12 +196,7 @@ jobs:
             echo "topicid=${{ vars.MESSAGE_THREAD_ID || '328' }}" >> $GITHUB_OUTPUT
           fi
 
-      - name: Download Debug artifact
-        uses: actions/download-artifact@v7
-        with:
-          name: ${{ steps.determine.outputs.title }}-Debug
-          path: .
-
+      # Only download the Release artifact — Debug is not sent to Telegram
       - name: Download Release artifact
         uses: actions/download-artifact@v7
         with:
@@ -218,7 +214,7 @@ jobs:
       - name: Upload to Telegram
         if: github.event_name != 'pull_request' && steps.need_upload.outputs.UPLOAD == 'true'
         env:
-          CHAT_ID: ${{ vars.CHAT_ID || '@Kaminarich_HeavenlyArchive' }}
+          CHAT_ID: ${{ vars.CHAT_ID }}
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
           MESSAGE_THREAD_ID: ${{ steps.determine.outputs.topicid }}
           COMMIT_MESSAGE: ${{ steps.commit.outputs.MESSAGE }}
@@ -230,6 +226,5 @@ jobs:
         run: |
           pip3 install telethon
           export VERSION=$(git rev-list --count HEAD)
-          APK_DEBUG=apk/debug/*.apk
           APK_RELEASE=apk/release/*.apk
-          python3 $GITHUB_WORKSPACE/scripts/ksubot.py $APK_DEBUG $APK_RELEASE
+          python3 $GITHUB_WORKSPACE/scripts/ksubot.py $APK_RELEASE

@@ -4,6 +4,7 @@ import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -17,12 +18,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -39,6 +40,7 @@ import me.weishu.kernelsu.KernelVersion
 import me.weishu.kernelsu.Natives
 import me.weishu.kernelsu.R
 import me.weishu.kernelsu.getKernelVersion
+import me.weishu.kernelsu.ui.component.PowerMenuButton
 import me.weishu.kernelsu.ui.util.getHeaderImage
 import me.weishu.kernelsu.ui.util.saveHeaderImage
 
@@ -91,6 +93,9 @@ fun HomeScreen(navigator: DestinationsNavigator) {
                     managerVersionName = BuildConfig.VERSION_NAME,
                     managerVersionCode = BuildConfig.VERSION_CODE
                 )
+
+                // CARDVIEW FEEDBACK / CONTACT
+                FeedbackCard()
             }
         }
     }
@@ -118,6 +123,9 @@ fun HomeBanner(ksuVersion: Int?) {
         }
     }
 
+    // Warna ikon overlay: putih kalau ada gambar custom, ikut Material You kalau default
+    val iconTint = if (headerImageUri != null) Color.White else MaterialTheme.colorScheme.onPrimaryContainer
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -126,7 +134,7 @@ fun HomeBanner(ksuVersion: Int?) {
             // Sudut bawah dibiarkan lurus; efek lengkungan ke dalam
             // dibuat oleh blok konten yang menimpa banner di bawah.
     ) {
-        // Latar Belakang Banner (Gambar atau Default Warna Bawaan)
+        // Latar Belakang Banner: gunakan header_bg.webp sebagai default
         if (headerImageUri != null) {
             AsyncImage(
                 model = ImageRequest.Builder(context)
@@ -144,34 +152,29 @@ fun HomeBanner(ksuVersion: Int?) {
                     .background(Color.Black.copy(alpha = 0.3f))
             )
         } else {
-            // Gradient Default Bawaan jika tidak ada gambar
-            val gradientTop = MaterialTheme.colorScheme.primary
-            val gradientBottom = MaterialTheme.colorScheme.primaryContainer
+            // Default: gunakan header_bg.webp sebagai gambar latar banner
+            Image(
+                painter = painterResource(id = R.drawable.header_bg),
+                contentDescription = "Default Banner",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+            // Overlay ringan agar teks tetap terbaca di atas gambar default
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(
-                        brush = Brush.verticalGradient(
-                            colors = listOf(gradientTop, gradientBottom)
-                        )
-                    )
+                    .background(Color.Black.copy(alpha = 0.35f))
             )
         }
 
-        // Tombol Edit/Ganti Banner (Kiri Atas)
-        IconButton(
-            onClick = { launcher.launch(arrayOf("image/*")) },
+        // Logo KamiSU (Tengah Banner) - gambar ic_kamisu.png
+        Image(
+            painter = painterResource(id = R.drawable.ic_kamisu),
+            contentDescription = "KamiSU Logo",
             modifier = Modifier
-                .align(Alignment.TopStart)
-                // Padding atas ditambah statusBarPadding agar turun ke bawah jam
-                .padding(top = 16.dp + statusBarPadding, start = 8.dp) 
-        ) {
-            Icon(
-                imageVector = Icons.Filled.Edit,
-                contentDescription = "Change Banner",
-                tint = if (headerImageUri != null) Color.White else MaterialTheme.colorScheme.onPrimaryContainer
-            )
-        }
+                .size(80.dp)
+                .align(Alignment.Center)
+        )
 
         // Teks KamiSU (Kanan Atas) + Status Not Installed (Kecil di Bawahnya)
         Column(
@@ -185,7 +188,7 @@ fun HomeBanner(ksuVersion: Int?) {
                 text = stringResource(id = R.string.app_name), // Teks "KamiSU"
                 fontSize = 38.sp,
                 fontWeight = FontWeight.ExtraBold,
-                color = if (headerImageUri != null) Color.White else MaterialTheme.colorScheme.onPrimaryContainer
+                color = Color.White
             )
             
             // Teks "Not Installed" kecil jika belum terinstall
@@ -194,8 +197,29 @@ fun HomeBanner(ksuVersion: Int?) {
                     text = stringResource(id = R.string.home_status_not_installed),
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium,
-                    color = if (headerImageUri != null) Color.White.copy(alpha = 0.85f) else MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f),
+                    color = Color.White.copy(alpha = 0.85f),
                     modifier = Modifier.padding(top = 2.dp)
+                )
+            }
+        }
+
+        // Tombol di kanan bawah banner: [Power] [Ganti Gambar]
+        Row(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(bottom = 12.dp, end = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(0.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Tombol Power Menu (hanya tampil jika KSU aktif)
+            PowerMenuButton(iconTint = iconTint)
+
+            // Tombol Ganti Gambar Banner
+            IconButton(onClick = { launcher.launch(arrayOf("image/*")) }) {
+                Icon(
+                    imageVector = Icons.Filled.Image,
+                    contentDescription = "Change Banner",
+                    tint = iconTint
                 )
             }
         }
@@ -344,6 +368,69 @@ fun UnifiedInfoGrid(
                     Icon(Icons.Filled.MenuBook, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(text = stringResource(id = R.string.learn_kamisu), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun FeedbackCard() {
+    val uriHandler = LocalUriHandler.current
+
+    ElevatedCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(1.dp)
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // Subtitle
+            Text(
+                text = stringResource(id = R.string.home_feedback_title),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            // Body text
+            Text(
+                text = stringResource(id = R.string.home_feedback_body),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            // Icon row: GitHub + Telegram
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(24.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // GitHub
+                IconButton(onClick = { uriHandler.openUri("https://github.com/kaminarich/KamiSU") }) {
+                    Icon(
+                        imageVector = Icons.Filled.Code,
+                        contentDescription = "GitHub",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+                // Telegram
+                IconButton(onClick = { uriHandler.openUri("https://t.me/kaminarich") }) {
+                    Icon(
+                        imageVector = Icons.Filled.Send,
+                        contentDescription = "Telegram",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(28.dp)
+                    )
                 }
             }
         }
