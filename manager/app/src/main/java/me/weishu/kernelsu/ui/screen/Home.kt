@@ -32,6 +32,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
@@ -148,7 +149,7 @@ fun HomeBanner(ksuVersion: Int?, navigator: DestinationsNavigator) {
     }
 
     val iconTint = Color.White
-    val bannerShape = ConcaveBottomShape(32.dp)
+    val bannerShape = ConcaveBottomShape(48.dp)
 
     Box(
         modifier = Modifier
@@ -407,7 +408,7 @@ fun UnifiedInfoGrid(
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(text = stringResource(id = R.string.home_kernel_version), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.outline)
                     Spacer(modifier = Modifier.height(2.dp))
-                    Text(text = kernelVersion.toString(), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, maxLines = 1, modifier = Modifier.basicMarquee())
+                    Text(text = kernelVersion.toString(), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Clip, modifier = Modifier.fillMaxWidth().basicMarquee(iterations = Int.MAX_VALUE))
                 }
 
                 VerticalDivider(modifier = Modifier.padding(vertical = 12.dp))
