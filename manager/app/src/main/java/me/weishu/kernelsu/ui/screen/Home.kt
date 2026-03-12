@@ -396,8 +396,11 @@ fun StatusSection(ksuVersion: Int?, navigator: DestinationsNavigator) {
             shape = RoundedCornerShape(16.dp)
         ) {
             Row(
-                modifier = Modifier.padding(20.dp),
-                verticalAlignment = Alignment.CenterVertically
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
             ) {
                 Icon(
                     imageVector = Icons.Filled.Verified,
