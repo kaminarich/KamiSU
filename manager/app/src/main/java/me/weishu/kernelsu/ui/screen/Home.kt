@@ -243,9 +243,10 @@ fun HomeBanner(ksuVersion: Int?, navigator: DestinationsNavigator) {
         // Teks KamiSU (Kiri Bawah) + Tanggal atau "Not Installed" di bawahnya
         Column(
             modifier = Modifier
-                .align(Alignment.BottomStart)
-                .padding(start = 24.dp, bottom = 28.dp),
-            horizontalAlignment = Alignment.Start
+                .align(Alignment.TopEnd)
+                // Padding atas ditambah statusBarPadding agar turun ke bawah baterai
+                .padding(top = 20.dp + statusBarPadding, end = 24.dp),
+            horizontalAlignment = Alignment.End
         ) {
             Text(
                 text = stringResource(id = R.string.app_name),
