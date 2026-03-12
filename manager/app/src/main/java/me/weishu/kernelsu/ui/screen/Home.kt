@@ -8,14 +8,55 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.HorizontalDivider
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.VerticalDivider
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.calculateBottomPadding
+import androidx.compose.foundation.layout.calculateTopPadding
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Memory
+import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.PhoneAndroid
+import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.Verified
+import androidx.compose.material3.Button
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.VerticalDivider
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -51,37 +92,38 @@ import me.weishu.kernelsu.R
 import me.weishu.kernelsu.getKernelVersion
 import me.weishu.kernelsu.ui.component.RebootDropdownItems
 import me.weishu.kernelsu.ui.util.getHeaderImage
+import me.weishu.kernelsu.ui.util.getSuSFS
+import me.weishu.kernelsu.ui.util.getSuSFSVariant
+import me.weishu.kernelsu.ui.util.getSuSFSVersion
 import me.weishu.kernelsu.ui.util.reboot
 import me.weishu.kernelsu.ui.util.saveHeaderImage
-import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-/**
- * Custom shape that clips the banner with concave (inward-curving) bottom corners.
- * Both side walls extend to full height. Each bottom corner scoops inward — the arc
- * departs vertically from the full-height wall, curves inward, and arrives horizontally
- * at the flat center shelf at (height - cornerRadius).
- */
 private class ConcaveBottomShape(private val cornerRadiusDp: Dp) : Shape {
     override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline {
         val r = with(density) { cornerRadiusDp.toPx() }
         val path = Path().apply {
             moveTo(0f, 0f)
             lineTo(size.width, 0f)
-            // Right wall descends all the way to the full bottom edge
             lineTo(size.width, size.height)
-            // Concave right corner
             quadraticBezierTo(size.width, size.height - r, size.width - r, size.height - r)
-            // Flat bottom center shelf
             lineTo(r, size.height - r)
-            // Concave left corner
             quadraticBezierTo(0f, size.height - r, 0f, size.height)
             close()
         }
         return Outline.Generic(path)
     }
+}
+
+private data class SusfsInfo(
+    val status: String,
+    val version: String? = null,
+    val variant: String? = null
+) {
+    val isSupported: Boolean
+        get() = status.equals("Supported", ignoreCase = true)
 }
 
 @Destination<RootGraph>(start = true)
@@ -188,7 +230,6 @@ fun HomeBanner(ksuVersion: Int?, navigator: DestinationsNavigator) {
             )
         }
 
-        // Tombol tiga titik tetap kanan atas
         Box(
             modifier = Modifier
                 .align(Alignment.TopEnd)
@@ -221,7 +262,6 @@ fun HomeBanner(ksuVersion: Int?, navigator: DestinationsNavigator) {
             }
         }
 
-        // Judul + status/tanggal pindah ke kiri bawah, tidak mentok bawah
         Column(
             modifier = Modifier
                 .align(Alignment.BottomStart)
@@ -258,19 +298,26 @@ fun HomeBanner(ksuVersion: Int?, navigator: DestinationsNavigator) {
 @Composable
 fun SusfsVersionCard() {
     val notFoundText = stringResource(id = R.string.home_susfs_not_found)
-    val enabledText = stringResource(id = R.string.home_susfs_enabled)
 
-    val susfsStatus by produceState<String?>(initialValue = null) {
+    val susfsInfo by produceState(initialValue = SusfsInfo(status = notFoundText)) {
         value = withContext(Dispatchers.IO) {
             try {
-                val enabledFile = File("/proc/sys/fs/susfs/enabled")
-                if (enabledFile.exists() && enabledFile.readText().trim() == "1") {
-                    enabledText
+                val support = getSuSFS().trim()
+                if (support.equals("Supported", ignoreCase = true)) {
+                    val version = getSuSFSVersion().trim().ifBlank { "-" }
+                    val variant = getSuSFSVariant().trim().ifBlank { "-" }
+                    SusfsInfo(
+                        status = "Supported",
+                        version = version,
+                        variant = variant
+                    )
                 } else {
-                    notFoundText
+                    SusfsInfo(
+                        status = support.ifBlank { notFoundText }
+                    )
                 }
             } catch (e: Exception) {
-                notFoundText
+                SusfsInfo(status = notFoundText)
             }
         }
     }
@@ -291,24 +338,46 @@ fun SusfsVersionCard() {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Icon(
                     imageVector = Icons.Filled.Security,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
+                    tint = if (susfsInfo.isSupported) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.outline
+                    },
                     modifier = Modifier.size(24.dp)
                 )
                 Spacer(modifier = Modifier.width(12.dp))
-                Text(
-                    text = stringResource(id = R.string.home_susfs_version),
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
+                Column {
+                    Text(
+                        text = stringResource(id = R.string.home_susfs_version),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    if (susfsInfo.isSupported) {
+                        Text(
+                            text = "${susfsInfo.version} (${susfsInfo.variant})",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.outline
+                        )
+                    }
+                }
             }
+
             Text(
-                text = susfsStatus ?: stringResource(id = R.string.home_susfs_not_found),
+                text = susfsInfo.status,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.outline
+                fontWeight = FontWeight.SemiBold,
+                color = if (susfsInfo.isSupported) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.outline
+                }
             )
         }
     }
