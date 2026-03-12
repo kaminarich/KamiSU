@@ -244,7 +244,7 @@ fun HomeBanner(ksuVersion: Int?, navigator: DestinationsNavigator) {
         Column(
             modifier = Modifier
                 .align(Alignment.BottomStart)
-                .padding(start = 24.dp, bottom = 20.dp),
+                .padding(start = 24.dp, bottom = 28.dp),
             horizontalAlignment = Alignment.Start
         ) {
             Text(
