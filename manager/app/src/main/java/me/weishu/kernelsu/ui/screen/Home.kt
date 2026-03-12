@@ -32,7 +32,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
@@ -61,19 +60,24 @@ import java.util.Date
 import java.util.Locale
 
 /**
- * Custom shape that clips the banner with a concave (inward-curving) bottom edge.
- * The entire bottom of the shape bows upward at the center, creating a smooth arc
- * that visually complements rounded elements placed below the banner.
+ * Custom shape that clips the banner with concave (inward-curving) bottom corners.
+ * The bottom center remains flat/horizontal, while each bottom corner bows inward
+ * toward the center of the shape — matching the reference design.
  */
-private class ConcaveBottomShape(private val archDepthDp: Dp) : Shape {
+private class ConcaveBottomShape(private val cornerRadiusDp: Dp) : Shape {
     override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline {
-        val archDepth = with(density) { archDepthDp.toPx() }
+        val r = with(density) { cornerRadiusDp.toPx() }
         val path = Path().apply {
             moveTo(0f, 0f)
             lineTo(size.width, 0f)
-            lineTo(size.width, size.height)
-            // Concave bottom arc: entire bottom edge curves inward (bows upward at center)
-            quadraticBezierTo(size.width / 2f, size.height - archDepth, 0f, size.height)
+            // Descend right side to just above the bottom-right corner
+            lineTo(size.width, size.height - r)
+            // Concave (inward) right corner: control point is inside the rectangle
+            quadraticBezierTo(size.width - r, size.height - r, size.width - r, size.height)
+            // Flat bottom center
+            lineTo(r, size.height)
+            // Concave (inward) left corner: control point is inside the rectangle
+            quadraticBezierTo(r, size.height - r, 0f, size.height - r)
             close()
         }
         return Outline.Generic(path)
@@ -86,6 +90,10 @@ fun HomeScreen(navigator: DestinationsNavigator) {
     val isManager = Natives.isManager
     val ksuVersion = if (isManager) Natives.version else null
     val kernelVersion = getKernelVersion()
+    // Full kernel version string (e.g. "6.1.166-Aetherium3.6-I") for display + marquee
+    val kernelVersionString = remember(kernelVersion) {
+        try { android.system.Os.uname().release } catch (e: Exception) { kernelVersion.toString() }
+    }
     val scrollState = rememberScrollState()
 
     // Menghilangkan TopAppBar bawaan (Header)
@@ -108,7 +116,7 @@ fun HomeScreen(navigator: DestinationsNavigator) {
 
             // 4. SATU CARDVIEW UNTUK SEMUA INFO (GRID)
             UnifiedInfoGrid(
-                kernelVersion = kernelVersion,
+                kernelVersionString = kernelVersionString,
                 managerVersionName = BuildConfig.VERSION_NAME,
                 managerVersionCode = BuildConfig.VERSION_CODE
             )
@@ -149,7 +157,7 @@ fun HomeBanner(ksuVersion: Int?, navigator: DestinationsNavigator) {
     }
 
     val iconTint = Color.White
-    val bannerShape = ConcaveBottomShape(48.dp)
+    val bannerShape = ConcaveBottomShape(32.dp)
 
     Box(
         modifier = Modifier
@@ -374,7 +382,7 @@ fun StatusSection(ksuVersion: Int?, navigator: DestinationsNavigator) {
 
 @Composable
 fun UnifiedInfoGrid(
-    kernelVersion: KernelVersion,
+    kernelVersionString: String,
     managerVersionName: String,
     managerVersionCode: Int
 ) {
@@ -408,7 +416,7 @@ fun UnifiedInfoGrid(
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(text = stringResource(id = R.string.home_kernel_version), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.outline)
                     Spacer(modifier = Modifier.height(2.dp))
-                    Text(text = kernelVersion.toString(), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Clip, modifier = Modifier.fillMaxWidth().basicMarquee(iterations = Int.MAX_VALUE))
+                    Text(text = kernelVersionString, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, maxLines = 1, modifier = Modifier.fillMaxWidth().basicMarquee(iterations = Int.MAX_VALUE))
                 }
 
                 VerticalDivider(modifier = Modifier.padding(vertical = 12.dp))
