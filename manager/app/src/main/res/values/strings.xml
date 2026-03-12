@@ -229,4 +229,6 @@
     <string name="enable_adb">Enable ADB</string>
     <string name="enable_adb_summary">Enable USB debugging (ADB) after install</string>
     <string name="safe_mode_module_disabled">Module installation is disabled in safe mode</string>
+    <string name="home_something_wrong">Something Wrong?</string>
+    <string name="home_something_wrong_content">Encounter problem or want to give feedback? Kindly reach me now!</string>
 </resources>

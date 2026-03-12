@@ -18,13 +18,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Outline
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -40,9 +48,37 @@ import me.weishu.kernelsu.KernelVersion
 import me.weishu.kernelsu.Natives
 import me.weishu.kernelsu.R
 import me.weishu.kernelsu.getKernelVersion
+import me.weishu.kernelsu.ui.component.RebootDropdownItems
 import me.weishu.kernelsu.ui.util.getHeaderImage
+import me.weishu.kernelsu.ui.util.reboot
 import me.weishu.kernelsu.ui.util.saveHeaderImage
 import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
+/**
+ * Custom shape that clips the banner with concave (inward-curving) bottom corners.
+ * The two bottom corners curve toward the interior of the shape, creating the effect
+ * that the content below visually overlaps the banner edges.
+ */
+private class ConcaveBottomShape(private val cornerRadiusDp: Dp) : Shape {
+    override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline {
+        val r = with(density) { cornerRadiusDp.toPx() }
+        val path = Path().apply {
+            moveTo(0f, 0f)
+            lineTo(size.width, 0f)
+            lineTo(size.width, size.height - r)
+            // Bottom-right concave corner: control point is inside the shape
+            quadraticBezierTo(size.width - r, size.height - r, size.width - r, size.height)
+            lineTo(r, size.height)
+            // Bottom-left concave corner: control point is inside the shape
+            quadraticBezierTo(r, size.height - r, 0f, size.height - r)
+            close()
+        }
+        return Outline.Generic(path)
+    }
+}
 
 @Destination<RootGraph>(start = true)
 @Composable
@@ -61,9 +97,8 @@ fun HomeScreen(navigator: DestinationsNavigator) {
                 // Hanya gunakan bottom padding. Top dibiarkan agar banner full ke atas layar
                 .padding(bottom = innerPadding.calculateBottomPadding())
         ) {
-            
-            // 1. BANNER CUSTOM (Full atas, melengkung bawah, pakai shadow)
-            HomeBanner(ksuVersion = ksuVersion)
+            // 1. BANNER CUSTOM (Full atas, sudut bawah cekung, pakai shadow)
+            HomeBanner(ksuVersion = ksuVersion, navigator = navigator)
 
             // 2. STATUS INDICATOR & INSTALL BUTTON
             StatusSection(ksuVersion = ksuVersion, navigator = navigator)
@@ -77,20 +112,26 @@ fun HomeScreen(navigator: DestinationsNavigator) {
                 managerVersionName = BuildConfig.VERSION_NAME,
                 managerVersionCode = BuildConfig.VERSION_CODE
             )
+
+            // 5. SOMETHING WRONG CARD
+            SomethingWrongCard()
+
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
 
 @Composable
-fun HomeBanner(ksuVersion: Int?) {
+fun HomeBanner(ksuVersion: Int?, navigator: DestinationsNavigator) {
     val context = LocalContext.current
     val contentResolver = context.contentResolver
     var headerImageUri by remember { mutableStateOf(context.getHeaderImage()) }
-    
+    var showMenu by remember { mutableStateOf(false) }
+
     // Menghitung tinggi status bar agar teks/tombol tidak tertimpa jam/baterai HP
     val statusBarPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
 
-    // Launcher untuk ganti gambar banner
+    // Launcher untuk ganti gambar banner (klik banner)
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
         if (uri != null) {
             try {
@@ -103,18 +144,22 @@ fun HomeBanner(ksuVersion: Int?) {
         }
     }
 
+    val currentDate = remember {
+        SimpleDateFormat("EEE, dd/MM/yy", Locale.getDefault()).format(Date())
+    }
+
+    val iconTint = if (headerImageUri != null) Color.White else MaterialTheme.colorScheme.onPrimaryContainer
+    val bannerShape = ConcaveBottomShape(24.dp)
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
             // Tinggi total = tinggi base banner + tinggi status bar HP
             .height(220.dp + statusBarPadding)
-            // Tambahkan Shadow (Efek Bayangan) dengan bentuk sudut bawah yang melengkung
-            .shadow(
-                elevation = 8.dp, 
-                shape = RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp)
-            )
-            // Potong konten banner agar tidak keluar dari area lengkung
-            .clip(RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp))
+            // Shadow mengikuti bentuk cekung
+            .shadow(elevation = 8.dp, shape = bannerShape)
+            // Clip konten sesuai bentuk cekung
+            .clip(bannerShape)
             // Klik banner untuk ganti gambar
             .clickable { launcher.launch(arrayOf("image/*")) }
     ) {
@@ -144,28 +189,66 @@ fun HomeBanner(ksuVersion: Int?) {
             )
         }
 
-        // Teks KamiSU (Kanan Atas) + Status Not Installed (Kecil di Bawahnya)
-        Column(
+        // Tombol Tiga Titik (Kanan Atas) untuk menu install & power
+        Box(
             modifier = Modifier
                 .align(Alignment.TopEnd)
-                // Padding atas ditambah statusBarPadding agar turun ke bawah baterai
-                .padding(top = 28.dp + statusBarPadding, end = 24.dp),
-            horizontalAlignment = Alignment.End
+                .padding(top = 16.dp + statusBarPadding, end = 8.dp)
+        ) {
+            IconButton(onClick = { showMenu = true }) {
+                Icon(
+                    imageVector = Icons.Filled.MoreVert,
+                    contentDescription = "More options",
+                    tint = iconTint
+                )
+            }
+            DropdownMenu(
+                expanded = showMenu,
+                onDismissRequest = { showMenu = false }
+            ) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(id = R.string.home_install_update)) },
+                    onClick = {
+                        showMenu = false
+                        navigator.navigate(InstallScreenDestination)
+                    },
+                    leadingIcon = { Icon(Icons.Filled.Build, contentDescription = null) }
+                )
+                HorizontalDivider()
+                RebootDropdownItems { reason ->
+                    showMenu = false
+                    reboot(reason)
+                }
+            }
+        }
+
+        // Teks KamiSU (Kiri Bawah) + Tanggal atau "Not Installed" di bawahnya
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(start = 24.dp, bottom = 20.dp),
+            horizontalAlignment = Alignment.Start
         ) {
             Text(
-                text = stringResource(id = R.string.app_name), // Teks "KamiSU"
+                text = stringResource(id = R.string.app_name),
                 fontSize = 38.sp,
                 fontWeight = FontWeight.ExtraBold,
-                color = if (headerImageUri != null) Color.White else MaterialTheme.colorScheme.onPrimaryContainer
+                color = iconTint
             )
-            
-            // Teks "Not Installed" kecil jika belum terinstall
             if (ksuVersion == null) {
                 Text(
                     text = stringResource(id = R.string.home_status_not_installed),
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium,
-                    color = if (headerImageUri != null) Color.White.copy(alpha = 0.85f) else MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f),
+                    color = iconTint.copy(alpha = 0.85f),
+                    modifier = Modifier.padding(top = 2.dp)
+                )
+            } else {
+                Text(
+                    text = currentDate,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Light,
+                    color = iconTint.copy(alpha = 0.80f),
                     modifier = Modifier.padding(top = 2.dp)
                 )
             }
@@ -262,6 +345,7 @@ fun StatusSection(ksuVersion: Int?, navigator: DestinationsNavigator) {
             }
         }
     } else {
+        // Tombol "Click to Install" (Not Installed) di luar banner
         Button(
             onClick = { navigator.navigate(InstallScreenDestination) },
             modifier = Modifier
@@ -344,26 +428,26 @@ fun UnifiedInfoGrid(
                 .fillMaxWidth()
                 .height(IntrinsicSize.Min)) {
                 
-                // Blok: Support Us
+                // Blok: Support Us (monet color, links to Telegram channel)
                 Column(
                     modifier = Modifier
                         .weight(1f)
-                        .clickable { uriHandler.openUri("https://kernelsu.org/donate.html") }
+                        .clickable { uriHandler.openUri("https://t.me/Kaminarich_HeavenlyArchive/328") }
                         .padding(16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Icon(Icons.Filled.Favorite, contentDescription = null, tint = Color(0xFFE91E63))
+                    Icon(Icons.Filled.Favorite, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(text = stringResource(id = R.string.home_support_us), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
                 }
 
                 VerticalDivider(modifier = Modifier.padding(vertical = 12.dp))
 
-                // Blok: Learn KernelSU/KamiSU
+                // Blok: Learn KamiSU (links to KamiSU repo)
                 Column(
                     modifier = Modifier
                         .weight(1f)
-                        .clickable { uriHandler.openUri("https://kernelsu.org/") }
+                        .clickable { uriHandler.openUri("https://github.com/kaminarich/KamiSU") }
                         .padding(16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
@@ -375,3 +459,60 @@ fun UnifiedInfoGrid(
         }
     }
 }
+
+@Composable
+fun SomethingWrongCard() {
+    val uriHandler = LocalUriHandler.current
+
+    ElevatedCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(1.dp)
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 16.dp)
+        ) {
+            Text(
+                text = stringResource(id = R.string.home_something_wrong),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = stringResource(id = R.string.home_something_wrong_content),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.outline
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
+            ) {
+                IconButton(onClick = { uriHandler.openUri("https://github.com/kaminarich") }) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_github),
+                        contentDescription = "GitHub",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(4.dp))
+                IconButton(onClick = { uriHandler.openUri("https://t.me/kaminarivh") }) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_telegram),
+                        contentDescription = "Telegram",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
