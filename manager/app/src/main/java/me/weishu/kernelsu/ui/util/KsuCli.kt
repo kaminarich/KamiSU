@@ -25,7 +25,6 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-
 /**
  * @author weishu
  * @date 2023/1/1.
@@ -35,6 +34,10 @@ private const val BUSYBOX = "/data/adb/ksu/bin/busybox"
 
 private fun getKsuDaemonPath(): String {
     return ksuApp.applicationInfo.nativeLibraryDir + File.separator + "libksud.so"
+}
+
+private val suSFSDaemonPath by lazy {
+    ksuApp.applicationInfo.nativeLibraryDir + File.separator + "libsusfsd.so"
 }
 
 data class FlashResult(val code: Int, val err: String, val showReboot: Boolean) {
@@ -175,18 +178,17 @@ fun uninstallModule(id: String): Boolean {
 
 private fun processUiPrintLine(s: String?): Pair<Int, String?> {
     if (s == null) {
-        return Pair(1,null)
+        return Pair(1, null)
     }
 
     val check1 = s.startsWith("ui_print")
     val trimmed = s.trim()
     val check2 = trimmed.startsWith("ui_print")
-    if (!check1 && check2) return Pair(1,null)
+    if (!check1 && check2) return Pair(1, null)
 
-    return if(check1) {
-        Pair(1,trimmed.drop(8).dropWhile { it.isWhitespace() })
-    }
-    else {
+    return if (check1) {
+        Pair(1, trimmed.drop(8).dropWhile { it.isWhitespace() })
+    } else {
         Pair(2, trimmed)
     }
 }
@@ -200,7 +202,7 @@ private fun flashWithIoAk3(
     val stdoutCallback: CallbackList<String?> = object : CallbackList<String?>() {
         override fun onAddElement(s: String?) {
             val (type, text) = processUiPrintLine(s)
-            if(type == 1) {
+            if (type == 1) {
                 text?.let(onStdout)
             } else {
                 text?.let(onStderr)
@@ -337,7 +339,6 @@ fun installBoot(
     var cmd = "boot-patch --magiskboot ${magiskboot.absolutePath}"
 
     cmd += if (bootFile == null) {
-        // no boot.img, use -f to force install
         " -f"
     } else {
         " -b ${bootFile.absolutePath}"
@@ -374,11 +375,9 @@ fun installBoot(
         }
 
         LkmSelection.KmiNone -> {
-            // do nothing
         }
     }
 
-    // output dir
     val downloadsDir =
         Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
     cmd += " -o $downloadsDir"
@@ -393,10 +392,9 @@ fun installBoot(
     bootFile?.delete()
     lkmFile?.delete()
 
-    // if boot uri is empty, it is direct install, when success, we should show reboot button
-    val showReboot = bootUri == null && result.isSuccess // we create a temporary val here, to avoid calc showReboot double
-    if (showReboot) { // because we decide do not update ksud when startActivity
-        install() // install ksud here
+    val showReboot = bootUri == null && result.isSuccess
+    if (showReboot) {
+        install()
     }
     return FlashResult(result, showReboot)
 }
@@ -404,7 +402,6 @@ fun installBoot(
 fun reboot(reason: String = "") {
     val shell = getRootShell()
     if (reason == "recovery") {
-        // KEYCODE_POWER = 26, hide incorrect "Factory data reset" message
         ShellUtils.fastCmd(shell, "/system/bin/input keyevent 26")
     }
     ShellUtils.fastCmd(shell, "/system/bin/svc power reboot $reason || /system/bin/reboot $reason")
@@ -454,7 +451,8 @@ fun flashAnyKernelZip(
                     sh.newJob().add("rm -rf '$destDir' '$destZip'").exec()
                 }
             }
-        } catch (_: Throwable) { }
+        } catch (_: Throwable) {
+        }
     }
 }
 
@@ -556,6 +554,27 @@ fun getAppProfileTemplate(id: String): String {
         .to(ArrayList(), null).exec().out.joinToString("\n")
 }
 
+private fun execSuSfsd(arg: String): String {
+    val shell = getRootShell()
+    return ShellUtils.fastCmd(shell, "$suSFSDaemonPath $arg").trim()
+}
+
+fun getSuSFS(): String {
+    return runCatching { execSuSfsd("support") }.getOrDefault("")
+}
+
+fun getSuSFSVersion(): String {
+    return runCatching { execSuSfsd("version") }.getOrDefault("")
+}
+
+fun getSuSFSVariant(): String {
+    return runCatching { execSuSfsd("variant") }.getOrDefault("")
+}
+
+fun getSuSFSFeatures(): String {
+    return runCatching { execSuSfsd("features") }.getOrDefault("")
+}
+
 fun setAppProfileTemplate(id: String, template: String): Boolean {
     val shell = getRootShell()
     val escapedTemplate = template.replace("\"", "\\\"")
@@ -590,7 +609,7 @@ fun restartApp(packageName: String) {
     launchApp(packageName)
 }
 
-fun isWebuiModuleInstalled(modId: String) : Boolean {
+fun isWebuiModuleInstalled(modId: String): Boolean {
     val shell = getRootShell()
     val result = shell.newJob().add("test -d /data/adb/modules/$modId/webroot").exec()
     return result.isSuccess
