@@ -5,12 +5,12 @@
     android:viewportWidth="500.000000"
     android:viewportHeight="500.000000">
 
-    <!-- Wrapper group adds ~19% padding on all sides, keeping content within adaptive icon safe zone -->
+    <!-- Wrapper group reduces icon to ~75% of viewport and centers it -->
     <group
-            android:scaleX="0.86"
-            android:scaleY="0.86"
-            android:translateX="45"
-            android:translateY="-28">
+            android:scaleX="0.75"
+            android:scaleY="0.75"
+            android:translateX="51"
+            android:translateY="61">
         <group
                 android:translateY="500.000000"
                 android:scaleX="0.100000"

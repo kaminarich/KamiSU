@@ -61,9 +61,9 @@ import java.util.Locale
 
 /**
  * Custom shape that clips the banner with concave (inward-curving) bottom corners.
- * Both side walls extend to full height. Each bottom corner arcs upward-inward
- * from the full-height side wall to the flat center shelf at (height - cornerRadius),
- * so the corners genuinely curve into the banner and the flat center stays level.
+ * Both side walls extend to full height. Each bottom corner scoops inward — the arc
+ * departs vertically from the full-height wall, curves inward, and arrives horizontally
+ * at the flat center shelf at (height - cornerRadius).
  */
 private class ConcaveBottomShape(private val cornerRadiusDp: Dp) : Shape {
     override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline {
@@ -73,14 +73,14 @@ private class ConcaveBottomShape(private val cornerRadiusDp: Dp) : Shape {
             lineTo(size.width, 0f)
             // Right wall descends all the way to the full bottom edge
             lineTo(size.width, size.height)
-            // Concave right corner: arcs upward-inward from (w, h) to (w-r, h-r)
-            // Control at (w-r, h) → tangent departs horizontally, arrives vertically upward
-            quadraticBezierTo(size.width - r, size.height, size.width - r, size.height - r)
+            // Concave right corner: control at (w, h-r) scoops material out of the corner
+            // — arc departs vertically upward from (w,h), arrives horizontally at (w-r, h-r)
+            quadraticBezierTo(size.width, size.height - r, size.width - r, size.height - r)
             // Flat bottom center shelf (at height - r, above the side walls)
             lineTo(r, size.height - r)
-            // Concave left corner: arcs downward-outward from (r, h-r) to (0, h)
-            // Control at (r, h) → tangent departs vertically downward, arrives horizontally
-            quadraticBezierTo(r, size.height, 0f, size.height)
+            // Concave left corner: control at (0, h-r) scoops material out of the corner
+            // — arc departs horizontally from (r, h-r), arrives vertically downward at (0, h)
+            quadraticBezierTo(0f, size.height - r, 0f, size.height)
             close()
         }
         return Outline.Generic(path)
