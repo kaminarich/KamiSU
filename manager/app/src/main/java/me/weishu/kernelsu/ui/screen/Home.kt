@@ -41,12 +41,11 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.ramcosta.composedestinations.generated.destinations.InstallScreenDestination
+import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import me.weishu.kernelsu.BuildConfig
-import me.weishu.kernelsu.KernelVersion
 import me.weishu.kernelsu.Natives
 import me.weishu.kernelsu.R
 import me.weishu.kernelsu.getKernelVersion
@@ -73,13 +72,11 @@ private class ConcaveBottomShape(private val cornerRadiusDp: Dp) : Shape {
             lineTo(size.width, 0f)
             // Right wall descends all the way to the full bottom edge
             lineTo(size.width, size.height)
-            // Concave right corner: control at (w, h-r) scoops material out of the corner
-            // — arc departs vertically upward from (w,h), arrives horizontally at (w-r, h-r)
+            // Concave right corner
             quadraticBezierTo(size.width, size.height - r, size.width - r, size.height - r)
-            // Flat bottom center shelf (at height - r, above the side walls)
+            // Flat bottom center shelf
             lineTo(r, size.height - r)
-            // Concave left corner: control at (0, h-r) scoops material out of the corner
-            // — arc departs horizontally from (r, h-r), arrives vertically downward at (0, h)
+            // Concave left corner
             quadraticBezierTo(0f, size.height - r, 0f, size.height)
             close()
         }
@@ -93,38 +90,32 @@ fun HomeScreen(navigator: DestinationsNavigator) {
     val isManager = Natives.isManager
     val ksuVersion = if (isManager) Natives.version else null
     val kernelVersion = getKernelVersion()
-    // Full kernel version string (e.g. "6.1.166-Aetherium3.6-I") for display + marquee
     val kernelVersionString = remember(kernelVersion) {
-        try { android.system.Os.uname().release } catch (e: Exception) { kernelVersion.toString() }
+        try {
+            android.system.Os.uname().release
+        } catch (e: Exception) {
+            kernelVersion.toString()
+        }
     }
     val scrollState = rememberScrollState()
 
-    // Menghilangkan TopAppBar bawaan (Header)
     Scaffold { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(scrollState)
-                // Hanya gunakan bottom padding. Top dibiarkan agar banner full ke atas layar
                 .padding(bottom = innerPadding.calculateBottomPadding())
         ) {
-            // 1. BANNER CUSTOM (Full atas, sudut bawah cekung, pakai shadow)
             HomeBanner(ksuVersion = ksuVersion, navigator = navigator)
-
-            // 2. STATUS INDICATOR & INSTALL BUTTON
             StatusSection(ksuVersion = ksuVersion, navigator = navigator)
-
-            // 3. SUSFS VERSION CARD
             SusfsVersionCard()
 
-            // 4. SATU CARDVIEW UNTUK SEMUA INFO (GRID)
             UnifiedInfoGrid(
                 kernelVersionString = kernelVersionString,
                 managerVersionName = BuildConfig.VERSION_NAME,
                 managerVersionCode = BuildConfig.VERSION_CODE
             )
 
-            // 5. SOMETHING WRONG CARD
             SomethingWrongCard()
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -139,10 +130,8 @@ fun HomeBanner(ksuVersion: Int?, navigator: DestinationsNavigator) {
     var headerImageUri by remember { mutableStateOf(context.getHeaderImage()) }
     var showMenu by remember { mutableStateOf(false) }
 
-    // Menghitung tinggi status bar agar teks/tombol tidak tertimpa jam/baterai HP
     val statusBarPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
 
-    // Launcher untuk ganti gambar banner (klik banner)
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
         if (uri != null) {
             try {
@@ -165,16 +154,11 @@ fun HomeBanner(ksuVersion: Int?, navigator: DestinationsNavigator) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            // Tinggi total = tinggi base banner + tinggi status bar HP
             .height(220.dp + statusBarPadding)
-            // Shadow mengikuti bentuk cekung
             .shadow(elevation = 8.dp, shape = bannerShape)
-            // Clip konten sesuai bentuk cekung
             .clip(bannerShape)
-            // Klik banner untuk ganti gambar
             .clickable { launcher.launch(arrayOf("image/*")) }
     ) {
-        // Latar Belakang Banner (Gambar atau Default Warna Bawaan)
         if (headerImageUri != null) {
             AsyncImage(
                 model = ImageRequest.Builder(context)
@@ -185,21 +169,18 @@ fun HomeBanner(ksuVersion: Int?, navigator: DestinationsNavigator) {
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
             )
-            // Overlay warna gelap tipis supaya teks selalu terbaca kalau pakai gambar
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(Color.Black.copy(alpha = 0.3f))
             )
         } else {
-            // Default banner image (header_bg.webp) when no custom image is set
             Image(
                 painter = painterResource(id = R.drawable.header_bg),
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
             )
-            // Dark overlay to ensure text remains readable over the image
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -207,7 +188,7 @@ fun HomeBanner(ksuVersion: Int?, navigator: DestinationsNavigator) {
             )
         }
 
-        // Tombol Tiga Titik (Kanan Atas) untuk menu install & power
+        // Tombol tiga titik tetap kanan atas
         Box(
             modifier = Modifier
                 .align(Alignment.TopEnd)
@@ -240,13 +221,12 @@ fun HomeBanner(ksuVersion: Int?, navigator: DestinationsNavigator) {
             }
         }
 
-        // Teks KamiSU (Kiri Bawah) + Tanggal atau "Not Installed" di bawahnya
+        // Judul + status/tanggal pindah ke kiri bawah, tidak mentok bawah
         Column(
             modifier = Modifier
-                .align(Alignment.TopEnd)
-                // Padding atas ditambah statusBarPadding agar turun ke bawah baterai
-                .padding(top = 20.dp + statusBarPadding, end = 24.dp),
-            horizontalAlignment = Alignment.End
+                .align(Alignment.BottomStart)
+                .padding(start = 24.dp, bottom = 28.dp),
+            horizontalAlignment = Alignment.Start
         ) {
             Text(
                 text = stringResource(id = R.string.app_name),
@@ -284,8 +264,11 @@ fun SusfsVersionCard() {
         value = withContext(Dispatchers.IO) {
             try {
                 val enabledFile = File("/proc/sys/fs/susfs/enabled")
-                if (enabledFile.exists() && enabledFile.readText().trim() == "1") enabledText
-                else notFoundText
+                if (enabledFile.exists() && enabledFile.readText().trim() == "1") {
+                    enabledText
+                } else {
+                    notFoundText
+                }
             } catch (e: Exception) {
                 notFoundText
             }
@@ -334,7 +317,6 @@ fun SusfsVersionCard() {
 @Composable
 fun StatusSection(ksuVersion: Int?, navigator: DestinationsNavigator) {
     if (ksuVersion != null) {
-        // CardView "Running Flawlessly" (Working) di bawah banner
         ElevatedCard(
             modifier = Modifier
                 .fillMaxWidth()
@@ -349,7 +331,7 @@ fun StatusSection(ksuVersion: Int?, navigator: DestinationsNavigator) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
-                    imageVector = Icons.Filled.Verified, // Ikon Centang (ic_work)
+                    imageVector = Icons.Filled.Verified,
                     contentDescription = "Working",
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(32.dp)
@@ -364,7 +346,6 @@ fun StatusSection(ksuVersion: Int?, navigator: DestinationsNavigator) {
             }
         }
     } else {
-        // Tombol "Click to Install" (Not Installed) di luar banner
         Button(
             onClick = { navigator.navigate(InstallScreenDestination) },
             modifier = Modifier
@@ -392,7 +373,6 @@ fun UnifiedInfoGrid(
 ) {
     val uriHandler = LocalUriHandler.current
 
-    // Satu CardView Utama
     ElevatedCard(
         modifier = Modifier
             .fillMaxWidth()
@@ -403,51 +383,79 @@ fun UnifiedInfoGrid(
         )
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
-            
-            // --- BARIS 1: KERNEL & MANAGER ---
-            Row(modifier = Modifier
-                .fillMaxWidth()
-                .height(IntrinsicSize.Min)) {
-                
-                // Blok: Kernel Version
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(IntrinsicSize.Min)
+            ) {
+
                 Column(
                     modifier = Modifier
                         .weight(1f)
                         .padding(16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Icon(Icons.Filled.Memory, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    Icon(
+                        Icons.Filled.Memory,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary
+                    )
                     Spacer(modifier = Modifier.height(6.dp))
-                    Text(text = stringResource(id = R.string.home_kernel_version), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.outline)
+                    Text(
+                        text = stringResource(id = R.string.home_kernel_version),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.outline
+                    )
                     Spacer(modifier = Modifier.height(2.dp))
-                    Text(text = kernelVersionString, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, maxLines = 1, modifier = Modifier.fillMaxWidth().basicMarquee(iterations = Int.MAX_VALUE))
+                    Text(
+                        text = kernelVersionString,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .basicMarquee(iterations = Int.MAX_VALUE)
+                    )
                 }
 
                 VerticalDivider(modifier = Modifier.padding(vertical = 12.dp))
 
-                // Blok: Manager Version
                 Column(
                     modifier = Modifier
                         .weight(1f)
                         .padding(16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Icon(Icons.Filled.PhoneAndroid, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    Icon(
+                        Icons.Filled.PhoneAndroid,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary
+                    )
                     Spacer(modifier = Modifier.height(6.dp))
-                    Text(text = stringResource(id = R.string.home_manager_version), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.outline)
+                    Text(
+                        text = stringResource(id = R.string.home_manager_version),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.outline
+                    )
                     Spacer(modifier = Modifier.height(2.dp))
-                    Text(text = "$managerVersionName ($managerVersionCode)", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+                    Text(
+                        text = "$managerVersionName ($managerVersionCode)",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
+                    )
                 }
             }
 
             HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
 
-            // --- BARIS 2: SUPPORT & LEARN ---
-            Row(modifier = Modifier
-                .fillMaxWidth()
-                .height(IntrinsicSize.Min)) {
-                
-                // Blok: Support Us (monet color, links to Telegram channel)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(IntrinsicSize.Min)
+            ) {
+
                 Column(
                     modifier = Modifier
                         .weight(1f)
@@ -455,14 +463,21 @@ fun UnifiedInfoGrid(
                         .padding(16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Icon(Icons.Filled.Favorite, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    Icon(
+                        Icons.Filled.Favorite,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary
+                    )
                     Spacer(modifier = Modifier.height(6.dp))
-                    Text(text = stringResource(id = R.string.home_support_us), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                    Text(
+                        text = stringResource(id = R.string.home_support_us),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
 
                 VerticalDivider(modifier = Modifier.padding(vertical = 12.dp))
 
-                // Blok: Learn KamiSU (links to KamiSU repo)
                 Column(
                     modifier = Modifier
                         .weight(1f)
@@ -470,9 +485,17 @@ fun UnifiedInfoGrid(
                         .padding(16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Icon(Icons.Filled.MenuBook, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    Icon(
+                        Icons.Filled.MenuBook,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary
+                    )
                     Spacer(modifier = Modifier.height(6.dp))
-                    Text(text = stringResource(id = R.string.learn_kamisu), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                    Text(
+                        text = stringResource(id = R.string.learn_kamisu),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
         }
@@ -522,7 +545,7 @@ fun SomethingWrongCard() {
                     )
                 }
                 Spacer(modifier = Modifier.width(4.dp))
-                IconButton(onClick = { uriHandler.openUri("https://t.me/kaminarivh") }) {
+                IconButton(onClick = { uriHandler.openUri("https://t.me/kaminarich") }) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_telegram),
                         contentDescription = "Telegram",
@@ -534,4 +557,3 @@ fun SomethingWrongCard() {
         }
     }
 }
-
