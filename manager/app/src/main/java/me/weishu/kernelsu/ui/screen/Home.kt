@@ -4,7 +4,9 @@ import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -58,22 +60,19 @@ import java.util.Date
 import java.util.Locale
 
 /**
- * Custom shape that clips the banner with concave (inward-curving) bottom corners.
- * The two bottom corners curve toward the interior of the shape, creating the effect
- * that the content below visually overlaps the banner edges.
+ * Custom shape that clips the banner with a concave (inward-curving) bottom edge.
+ * The entire bottom of the shape bows upward at the center, creating a smooth arc
+ * that visually complements rounded elements placed below the banner.
  */
-private class ConcaveBottomShape(private val cornerRadiusDp: Dp) : Shape {
+private class ConcaveBottomShape(private val archDepthDp: Dp) : Shape {
     override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline {
-        val r = with(density) { cornerRadiusDp.toPx() }
+        val archDepth = with(density) { archDepthDp.toPx() }
         val path = Path().apply {
             moveTo(0f, 0f)
             lineTo(size.width, 0f)
-            lineTo(size.width, size.height - r)
-            // Bottom-right concave corner: control point is inside the shape
-            quadraticBezierTo(size.width - r, size.height - r, size.width - r, size.height)
-            lineTo(r, size.height)
-            // Bottom-left concave corner: control point is inside the shape
-            quadraticBezierTo(r, size.height - r, 0f, size.height - r)
+            lineTo(size.width, size.height)
+            // Concave bottom arc: entire bottom edge curves inward (bows upward at center)
+            quadraticBezierTo(size.width / 2f, size.height - archDepth, 0f, size.height)
             close()
         }
         return Outline.Generic(path)
@@ -148,8 +147,8 @@ fun HomeBanner(ksuVersion: Int?, navigator: DestinationsNavigator) {
         SimpleDateFormat("EEE, dd/MM/yy", Locale.getDefault()).format(Date())
     }
 
-    val iconTint = if (headerImageUri != null) Color.White else MaterialTheme.colorScheme.onPrimaryContainer
-    val bannerShape = ConcaveBottomShape(24.dp)
+    val iconTint = Color.White
+    val bannerShape = ConcaveBottomShape(32.dp)
 
     Box(
         modifier = Modifier
@@ -181,11 +180,18 @@ fun HomeBanner(ksuVersion: Int?, navigator: DestinationsNavigator) {
                     .background(Color.Black.copy(alpha = 0.3f))
             )
         } else {
-            // Warna Default Bawaan jika tidak ada gambar (tanpa overlay hitam)
+            // Default banner image (header_bg.webp) when no custom image is set
+            Image(
+                painter = painterResource(id = R.drawable.header_bg),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+            // Dark overlay to ensure text remains readable over the image
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.primaryContainer)
+                    .background(Color.Black.copy(alpha = 0.3f))
             )
         }
 
@@ -401,7 +407,7 @@ fun UnifiedInfoGrid(
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(text = stringResource(id = R.string.home_kernel_version), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.outline)
                     Spacer(modifier = Modifier.height(2.dp))
-                    Text(text = kernelVersion.toString(), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+                    Text(text = kernelVersion.toString(), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, maxLines = 1, modifier = Modifier.basicMarquee())
                 }
 
                 VerticalDivider(modifier = Modifier.padding(vertical = 12.dp))
