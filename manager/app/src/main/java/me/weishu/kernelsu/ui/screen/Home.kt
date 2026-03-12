@@ -157,7 +157,7 @@ fun HomeBanner(ksuVersion: Int?) {
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 // Padding atas ditambah statusBarPadding agar turun ke bawah baterai
-                .padding(top = 28.dp + statusBarPadding, end = 24.dp),
+                .padding(top = 20.dp + statusBarPadding, end = 24.dp),
             horizontalAlignment = Alignment.End
         ) {
             Text(
