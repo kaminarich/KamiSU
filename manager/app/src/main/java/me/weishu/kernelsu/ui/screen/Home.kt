@@ -1,6 +1,5 @@
 package me.weishu.kernelsu.ui.screen
 
-import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -18,7 +17,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -42,14 +40,9 @@ import me.weishu.kernelsu.KernelVersion
 import me.weishu.kernelsu.Natives
 import me.weishu.kernelsu.R
 import me.weishu.kernelsu.getKernelVersion
-import me.weishu.kernelsu.ui.component.RebootDropdownItems
 import me.weishu.kernelsu.ui.util.getHeaderImage
-import me.weishu.kernelsu.ui.util.reboot
 import me.weishu.kernelsu.ui.util.saveHeaderImage
 import java.io.File
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 @Destination<RootGraph>(start = true)
 @Composable
@@ -59,15 +52,18 @@ fun HomeScreen(navigator: DestinationsNavigator) {
     val kernelVersion = getKernelVersion()
     val scrollState = rememberScrollState()
 
+    // Menghilangkan TopAppBar bawaan (Header)
     Scaffold { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(scrollState)
+                // Hanya gunakan bottom padding. Top dibiarkan agar banner full ke atas layar
                 .padding(bottom = innerPadding.calculateBottomPadding())
         ) {
-            // 1. BANNER CUSTOM
-            HomeBanner(ksuVersion = ksuVersion, navigator = navigator)
+            
+            // 1. BANNER CUSTOM (Full atas, melengkung bawah, pakai shadow)
+            HomeBanner(ksuVersion = ksuVersion)
 
             // 2. STATUS INDICATOR & INSTALL BUTTON
             StatusSection(ksuVersion = ksuVersion, navigator = navigator)
@@ -75,7 +71,7 @@ fun HomeScreen(navigator: DestinationsNavigator) {
             // 3. SUSFS VERSION CARD
             SusfsVersionCard()
 
-            // 4. INFO GRID
+            // 4. SATU CARDVIEW UNTUK SEMUA INFO (GRID)
             UnifiedInfoGrid(
                 kernelVersion = kernelVersion,
                 managerVersionName = BuildConfig.VERSION_NAME,
@@ -85,25 +81,16 @@ fun HomeScreen(navigator: DestinationsNavigator) {
     }
 }
 
-private fun getOrSaveInstallDate(context: Context): String {
-    val prefs = context.getSharedPreferences("ksu_prefs", Context.MODE_PRIVATE)
-    return prefs.getString("install_date", null) ?: run {
-        val sdf = SimpleDateFormat("EEE, dd/MM/yy", Locale.getDefault())
-        val dateStr = sdf.format(Date())
-        prefs.edit().putString("install_date", dateStr).apply()
-        dateStr
-    }
-}
-
 @Composable
-fun HomeBanner(ksuVersion: Int?, navigator: DestinationsNavigator) {
+fun HomeBanner(ksuVersion: Int?) {
     val context = LocalContext.current
     val contentResolver = context.contentResolver
     var headerImageUri by remember { mutableStateOf(context.getHeaderImage()) }
-    var showMenu by remember { mutableStateOf(false) }
-
+    
+    // Menghitung tinggi status bar agar teks/tombol tidak tertimpa jam/baterai HP
     val statusBarPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
 
+    // Launcher untuk ganti gambar banner
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
         if (uri != null) {
             try {
@@ -116,22 +103,22 @@ fun HomeBanner(ksuVersion: Int?, navigator: DestinationsNavigator) {
         }
     }
 
-    val installDate = if (ksuVersion != null) {
-        remember { getOrSaveInstallDate(context) }
-    } else null
-
-    val iconTint = if (headerImageUri != null) Color.White else MaterialTheme.colorScheme.onPrimaryContainer
-
     Box(
         modifier = Modifier
             .fillMaxWidth()
+            // Tinggi total = tinggi base banner + tinggi status bar HP
             .height(220.dp + statusBarPadding)
+            // Tambahkan Shadow (Efek Bayangan) dengan bentuk sudut bawah yang melengkung
             .shadow(
-                elevation = 8.dp,
+                elevation = 8.dp, 
                 shape = RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp)
             )
+            // Potong konten banner agar tidak keluar dari area lengkung
             .clip(RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp))
+            // Klik banner untuk ganti gambar
+            .clickable { launcher.launch(arrayOf("image/*")) }
     ) {
+        // Latar Belakang Banner (Gambar atau Default Warna Bawaan)
         if (headerImageUri != null) {
             AsyncImage(
                 model = ImageRequest.Builder(context)
@@ -142,12 +129,14 @@ fun HomeBanner(ksuVersion: Int?, navigator: DestinationsNavigator) {
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
             )
+            // Overlay warna gelap tipis supaya teks selalu terbaca kalau pakai gambar
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(Color.Black.copy(alpha = 0.3f))
             )
         } else {
+            // Warna Default Bawaan jika tidak ada gambar (tanpa overlay hitam)
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -155,80 +144,28 @@ fun HomeBanner(ksuVersion: Int?, navigator: DestinationsNavigator) {
             )
         }
 
-        // Edit banner button (top-left)
-        IconButton(
-            onClick = { launcher.launch(arrayOf("image/*")) },
-            modifier = Modifier
-                .align(Alignment.TopStart)
-                .padding(top = 16.dp + statusBarPadding, start = 8.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Filled.Edit,
-                contentDescription = "Change Banner",
-                tint = iconTint
-            )
-        }
-
-        // Three-dot menu button (top-right)
-        Box(
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(top = 16.dp + statusBarPadding, end = 8.dp)
-        ) {
-            IconButton(onClick = { showMenu = true }) {
-                Icon(
-                    imageVector = Icons.Filled.MoreVert,
-                    contentDescription = "More options",
-                    tint = iconTint
-                )
-            }
-            DropdownMenu(
-                expanded = showMenu,
-                onDismissRequest = { showMenu = false }
-            ) {
-                DropdownMenuItem(
-                    text = { Text(stringResource(id = R.string.home_install_update)) },
-                    onClick = {
-                        showMenu = false
-                        navigator.navigate(InstallScreenDestination)
-                    },
-                    leadingIcon = { Icon(Icons.Filled.Build, contentDescription = null) }
-                )
-                HorizontalDivider()
-                RebootDropdownItems { reason ->
-                    showMenu = false
-                    reboot(reason)
-                }
-            }
-        }
-
-        // Title "KamiSU" at bottom-left + subtitle below
+        // Teks KamiSU (Kanan Atas) + Status Not Installed (Kecil di Bawahnya)
         Column(
             modifier = Modifier
-                .align(Alignment.BottomStart)
-                .padding(start = 24.dp, bottom = 20.dp),
-            horizontalAlignment = Alignment.Start
+                .align(Alignment.TopEnd)
+                // Padding atas ditambah statusBarPadding agar turun ke bawah baterai
+                .padding(top = 28.dp + statusBarPadding, end = 24.dp),
+            horizontalAlignment = Alignment.End
         ) {
             Text(
-                text = stringResource(id = R.string.app_name),
+                text = stringResource(id = R.string.app_name), // Teks "KamiSU"
                 fontSize = 38.sp,
                 fontWeight = FontWeight.ExtraBold,
-                color = iconTint
+                color = if (headerImageUri != null) Color.White else MaterialTheme.colorScheme.onPrimaryContainer
             )
+            
+            // Teks "Not Installed" kecil jika belum terinstall
             if (ksuVersion == null) {
                 Text(
                     text = stringResource(id = R.string.home_status_not_installed),
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium,
-                    color = iconTint.copy(alpha = 0.85f),
-                    modifier = Modifier.padding(top = 2.dp)
-                )
-            } else if (installDate != null) {
-                Text(
-                    text = installDate,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Light,
-                    color = iconTint.copy(alpha = 0.80f),
+                    color = if (headerImageUri != null) Color.White.copy(alpha = 0.85f) else MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f),
                     modifier = Modifier.padding(top = 2.dp)
                 )
             }
@@ -295,6 +232,7 @@ fun SusfsVersionCard() {
 @Composable
 fun StatusSection(ksuVersion: Int?, navigator: DestinationsNavigator) {
     if (ksuVersion != null) {
+        // CardView "Running Flawlessly" (Working) di bawah banner
         ElevatedCard(
             modifier = Modifier
                 .fillMaxWidth()
@@ -305,22 +243,19 @@ fun StatusSection(ksuVersion: Int?, navigator: DestinationsNavigator) {
             shape = RoundedCornerShape(16.dp)
         ) {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
+                modifier = Modifier.padding(20.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
-                    imageVector = Icons.Filled.Verified,
+                    imageVector = Icons.Filled.Verified, // Ikon Centang (ic_work)
                     contentDescription = "Working",
                     tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(28.dp)
+                    modifier = Modifier.size(32.dp)
                 )
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(16.dp))
                 Text(
                     text = stringResource(id = R.string.running_flawlessly),
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSecondaryContainer
                 )
@@ -353,8 +288,8 @@ fun UnifiedInfoGrid(
     managerVersionCode: Int
 ) {
     val uriHandler = LocalUriHandler.current
-    val context = LocalContext.current
 
+    // Satu CardView Utama
     ElevatedCard(
         modifier = Modifier
             .fillMaxWidth()
@@ -365,13 +300,13 @@ fun UnifiedInfoGrid(
         )
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
-
-            // --- ROW 1: KERNEL & MANAGER ---
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(IntrinsicSize.Min)
-            ) {
+            
+            // --- BARIS 1: KERNEL & MANAGER ---
+            Row(modifier = Modifier
+                .fillMaxWidth()
+                .height(IntrinsicSize.Min)) {
+                
+                // Blok: Kernel Version
                 Column(
                     modifier = Modifier
                         .weight(1f)
@@ -387,6 +322,7 @@ fun UnifiedInfoGrid(
 
                 VerticalDivider(modifier = Modifier.padding(vertical = 12.dp))
 
+                // Blok: Manager Version
                 Column(
                     modifier = Modifier
                         .weight(1f)
@@ -403,33 +339,27 @@ fun UnifiedInfoGrid(
 
             HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
 
-            // --- ROW 2: TELEGRAM & LEARN ---
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(IntrinsicSize.Min)
-            ) {
-                // Telegram
+            // --- BARIS 2: SUPPORT & LEARN ---
+            Row(modifier = Modifier
+                .fillMaxWidth()
+                .height(IntrinsicSize.Min)) {
+                
+                // Blok: Support Us
                 Column(
                     modifier = Modifier
                         .weight(1f)
-                        .clickable { uriHandler.openUri(context.getString(R.string.home_join_telegram_url)) }
+                        .clickable { uriHandler.openUri("https://kernelsu.org/donate.html") }
                         .padding(16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Icon(
-                        imageVector = Icons.Filled.Send,
-                        contentDescription = null,
-                        tint = Color(0xFF2196F3),
-                        modifier = Modifier.rotate(-30f)
-                    )
+                    Icon(Icons.Filled.Favorite, contentDescription = null, tint = Color(0xFFE91E63))
                     Spacer(modifier = Modifier.height(6.dp))
-                    Text(text = stringResource(id = R.string.home_join_telegram), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                    Text(text = stringResource(id = R.string.home_support_us), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
                 }
 
                 VerticalDivider(modifier = Modifier.padding(vertical = 12.dp))
 
-                // Learn KamiSU
+                // Blok: Learn KernelSU/KamiSU
                 Column(
                     modifier = Modifier
                         .weight(1f)
