@@ -212,6 +212,18 @@
     <string name="background_custom">Custom</string>
     <string name="background_default">Default</string>
     <string name="home_android">Android Version</string>
+    <string name="running_flawlessly">Running Flawlessly</string>
+    <string name="home_status_not_installed">Not Installed</string>
+    <string name="home_install">Click to Install</string>
+    <string name="home_kernel_version">Kernel Version</string>
+    <string name="home_support_us">Support Us</string>
+    <string name="learn_kamisu">Learn KamiSU</string>
+    <string name="home_susfs_version">SUSFS Version</string>
+    <string name="home_susfs_not_found">Not found</string>
+    <string name="home_susfs_enabled">Enabled</string>
+    <string name="home_join_telegram">Join Telegram</string>
+    <string name="home_join_telegram_url" translatable="false">https://t.me/kowsu_build</string>
+    <string name="home_install_update">Install / Update</string>
     <string name="allow_shell">Allow Shell</string>
     <string name="allow_shell_summary">Allow standard shell access</string>
     <string name="enable_adb">Enable ADB</string>
