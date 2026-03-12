@@ -4,7 +4,9 @@ import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -18,36 +20,83 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Outline
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootNavGraph
+import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.ramcosta.composedestinations.generated.destinations.InstallScreenDestination
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import me.weishu.kernelsu.BuildConfig
 import me.weishu.kernelsu.KernelVersion
 import me.weishu.kernelsu.Natives
 import me.weishu.kernelsu.R
 import me.weishu.kernelsu.getKernelVersion
+import me.weishu.kernelsu.ui.component.RebootDropdownItems
 import me.weishu.kernelsu.ui.util.getHeaderImage
+import me.weishu.kernelsu.ui.util.reboot
 import me.weishu.kernelsu.ui.util.saveHeaderImage
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
-@RootNavGraph(start = true)
-@Destination
+/**
+ * Custom shape that clips the banner with concave (inward-curving) bottom corners.
+ * Both side walls extend to full height. Each bottom corner scoops inward — the arc
+ * departs vertically from the full-height wall, curves inward, and arrives horizontally
+ * at the flat center shelf at (height - cornerRadius).
+ */
+private class ConcaveBottomShape(private val cornerRadiusDp: Dp) : Shape {
+    override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline {
+        val r = with(density) { cornerRadiusDp.toPx() }
+        val path = Path().apply {
+            moveTo(0f, 0f)
+            lineTo(size.width, 0f)
+            // Right wall descends all the way to the full bottom edge
+            lineTo(size.width, size.height)
+            // Concave right corner: control at (w, h-r) scoops material out of the corner
+            // — arc departs vertically upward from (w,h), arrives horizontally at (w-r, h-r)
+            quadraticBezierTo(size.width, size.height - r, size.width - r, size.height - r)
+            // Flat bottom center shelf (at height - r, above the side walls)
+            lineTo(r, size.height - r)
+            // Concave left corner: control at (0, h-r) scoops material out of the corner
+            // — arc departs horizontally from (r, h-r), arrives vertically downward at (0, h)
+            quadraticBezierTo(0f, size.height - r, 0f, size.height)
+            close()
+        }
+        return Outline.Generic(path)
+    }
+}
+
+@Destination<RootGraph>(start = true)
 @Composable
 fun HomeScreen(navigator: DestinationsNavigator) {
     val isManager = Natives.isManager
     val ksuVersion = if (isManager) Natives.version else null
     val kernelVersion = getKernelVersion()
+    // Full kernel version string (e.g. "6.1.166-Aetherium3.6-I") for display + marquee
+    val kernelVersionString = remember(kernelVersion) {
+        try { android.system.Os.uname().release } catch (e: Exception) { kernelVersion.toString() }
+    }
     val scrollState = rememberScrollState()
 
     // Menghilangkan TopAppBar bawaan (Header)
@@ -59,33 +108,41 @@ fun HomeScreen(navigator: DestinationsNavigator) {
                 // Hanya gunakan bottom padding. Top dibiarkan agar banner full ke atas layar
                 .padding(bottom = innerPadding.calculateBottomPadding())
         ) {
-            
-            // 1. BANNER CUSTOM (Full atas, melengkung bawah, pakai shadow)
-            HomeBanner(ksuVersion = ksuVersion)
+            // 1. BANNER CUSTOM (Full atas, sudut bawah cekung, pakai shadow)
+            HomeBanner(ksuVersion = ksuVersion, navigator = navigator)
 
             // 2. STATUS INDICATOR & INSTALL BUTTON
             StatusSection(ksuVersion = ksuVersion, navigator = navigator)
 
-            // 3. SATU CARDVIEW UNTUK SEMUA INFO (GRID)
+            // 3. SUSFS VERSION CARD
+            SusfsVersionCard()
+
+            // 4. SATU CARDVIEW UNTUK SEMUA INFO (GRID)
             UnifiedInfoGrid(
-                kernelVersion = kernelVersion,
+                kernelVersionString = kernelVersionString,
                 managerVersionName = BuildConfig.VERSION_NAME,
                 managerVersionCode = BuildConfig.VERSION_CODE
             )
+
+            // 5. SOMETHING WRONG CARD
+            SomethingWrongCard()
+
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
 
 @Composable
-fun HomeBanner(ksuVersion: Int?) {
+fun HomeBanner(ksuVersion: Int?, navigator: DestinationsNavigator) {
     val context = LocalContext.current
     val contentResolver = context.contentResolver
     var headerImageUri by remember { mutableStateOf(context.getHeaderImage()) }
-    
+    var showMenu by remember { mutableStateOf(false) }
+
     // Menghitung tinggi status bar agar teks/tombol tidak tertimpa jam/baterai HP
     val statusBarPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
 
-    // Launcher untuk ganti gambar banner
+    // Launcher untuk ganti gambar banner (klik banner)
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
         if (uri != null) {
             try {
@@ -98,18 +155,24 @@ fun HomeBanner(ksuVersion: Int?) {
         }
     }
 
+    val currentDate = remember {
+        SimpleDateFormat("EEE, dd/MM/yy", Locale.getDefault()).format(Date())
+    }
+
+    val iconTint = Color.White
+    val bannerShape = ConcaveBottomShape(32.dp)
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
             // Tinggi total = tinggi base banner + tinggi status bar HP
             .height(220.dp + statusBarPadding)
-            // Tambahkan Shadow (Efek Bayangan) dengan bentuk sudut bawah yang melengkung
-            .shadow(
-                elevation = 8.dp, 
-                shape = RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp)
-            )
-            // Potong konten banner agar tidak keluar dari area lengkung
-            .clip(RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp))
+            // Shadow mengikuti bentuk cekung
+            .shadow(elevation = 8.dp, shape = bannerShape)
+            // Clip konten sesuai bentuk cekung
+            .clip(bannerShape)
+            // Klik banner untuk ganti gambar
+            .clickable { launcher.launch(arrayOf("image/*")) }
     ) {
         // Latar Belakang Banner (Gambar atau Default Warna Bawaan)
         if (headerImageUri != null) {
@@ -129,30 +192,55 @@ fun HomeBanner(ksuVersion: Int?) {
                     .background(Color.Black.copy(alpha = 0.3f))
             )
         } else {
-            // Warna Default Bawaan jika tidak ada gambar (tanpa overlay hitam)
+            // Default banner image (header_bg.webp) when no custom image is set
+            Image(
+                painter = painterResource(id = R.drawable.header_bg),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+            // Dark overlay to ensure text remains readable over the image
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.primaryContainer)
+                    .background(Color.Black.copy(alpha = 0.3f))
             )
         }
 
-        // Tombol Edit/Ganti Banner (Kiri Atas)
-        IconButton(
-            onClick = { launcher.launch(arrayOf("image/*")) },
+        // Tombol Tiga Titik (Kanan Atas) untuk menu install & power
+        Box(
             modifier = Modifier
-                .align(Alignment.TopLeft)
-                // Padding atas ditambah statusBarPadding agar turun ke bawah jam
-                .padding(top = 16.dp + statusBarPadding, start = 8.dp) 
+                .align(Alignment.TopEnd)
+                .padding(top = 16.dp + statusBarPadding, end = 8.dp)
         ) {
-            Icon(
-                imageVector = Icons.Filled.Edit,
-                contentDescription = "Change Banner",
-                tint = if (headerImageUri != null) Color.White else MaterialTheme.colorScheme.onPrimaryContainer
-            )
+            IconButton(onClick = { showMenu = true }) {
+                Icon(
+                    imageVector = Icons.Filled.MoreVert,
+                    contentDescription = "More options",
+                    tint = iconTint
+                )
+            }
+            DropdownMenu(
+                expanded = showMenu,
+                onDismissRequest = { showMenu = false }
+            ) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(id = R.string.home_install_update)) },
+                    onClick = {
+                        showMenu = false
+                        navigator.navigate(InstallScreenDestination)
+                    },
+                    leadingIcon = { Icon(Icons.Filled.Build, contentDescription = null) }
+                )
+                HorizontalDivider()
+                RebootDropdownItems { reason ->
+                    showMenu = false
+                    reboot(reason)
+                }
+            }
         }
 
-        // Teks KamiSU (Kanan Atas) + Status Not Installed (Kecil di Bawahnya)
+        // Teks KamiSU (Kiri Bawah) + Tanggal atau "Not Installed" di bawahnya
         Column(
             modifier = Modifier
                 .align(Alignment.TopEnd)
@@ -161,22 +249,84 @@ fun HomeBanner(ksuVersion: Int?) {
             horizontalAlignment = Alignment.End
         ) {
             Text(
-                text = stringResource(id = R.string.app_name), // Teks "KamiSU"
+                text = stringResource(id = R.string.app_name),
                 fontSize = 38.sp,
                 fontWeight = FontWeight.ExtraBold,
-                color = if (headerImageUri != null) Color.White else MaterialTheme.colorScheme.onPrimaryContainer
+                color = iconTint
             )
-            
-            // Teks "Not Installed" kecil jika belum terinstall
             if (ksuVersion == null) {
                 Text(
                     text = stringResource(id = R.string.home_status_not_installed),
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium,
-                    color = if (headerImageUri != null) Color.White.copy(alpha = 0.85f) else MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f),
+                    color = iconTint.copy(alpha = 0.85f),
+                    modifier = Modifier.padding(top = 2.dp)
+                )
+            } else {
+                Text(
+                    text = currentDate,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Light,
+                    color = iconTint.copy(alpha = 0.80f),
                     modifier = Modifier.padding(top = 2.dp)
                 )
             }
+        }
+    }
+}
+
+@Composable
+fun SusfsVersionCard() {
+    val notFoundText = stringResource(id = R.string.home_susfs_not_found)
+    val enabledText = stringResource(id = R.string.home_susfs_enabled)
+
+    val susfsStatus by produceState<String?>(initialValue = null) {
+        value = withContext(Dispatchers.IO) {
+            try {
+                val enabledFile = File("/proc/sys/fs/susfs/enabled")
+                if (enabledFile.exists() && enabledFile.readText().trim() == "1") enabledText
+                else notFoundText
+            } catch (e: Exception) {
+                notFoundText
+            }
+        }
+    }
+
+    ElevatedCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(2.dp)
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Filled.Security,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = stringResource(id = R.string.home_susfs_version),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+            Text(
+                text = susfsStatus ?: stringResource(id = R.string.home_susfs_not_found),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.outline
+            )
         }
     }
 }
@@ -236,7 +386,7 @@ fun StatusSection(ksuVersion: Int?, navigator: DestinationsNavigator) {
 
 @Composable
 fun UnifiedInfoGrid(
-    kernelVersion: KernelVersion,
+    kernelVersionString: String,
     managerVersionName: String,
     managerVersionCode: Int
 ) {
@@ -270,7 +420,7 @@ fun UnifiedInfoGrid(
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(text = stringResource(id = R.string.home_kernel_version), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.outline)
                     Spacer(modifier = Modifier.height(2.dp))
-                    Text(text = kernelVersion.toString(), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+                    Text(text = kernelVersionString, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, maxLines = 1, modifier = Modifier.fillMaxWidth().basicMarquee(iterations = Int.MAX_VALUE))
                 }
 
                 VerticalDivider(modifier = Modifier.padding(vertical = 12.dp))
@@ -297,26 +447,26 @@ fun UnifiedInfoGrid(
                 .fillMaxWidth()
                 .height(IntrinsicSize.Min)) {
                 
-                // Blok: Support Us
+                // Blok: Support Us (monet color, links to Telegram channel)
                 Column(
                     modifier = Modifier
                         .weight(1f)
-                        .clickable { uriHandler.openUri("https://kernelsu.org/donate.html") }
+                        .clickable { uriHandler.openUri("https://t.me/Kaminarich_HeavenlyArchive/328") }
                         .padding(16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Icon(Icons.Filled.Favorite, contentDescription = null, tint = Color(0xFFE91E63))
+                    Icon(Icons.Filled.Favorite, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(text = stringResource(id = R.string.home_support_us), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
                 }
 
                 VerticalDivider(modifier = Modifier.padding(vertical = 12.dp))
 
-                // Blok: Learn KernelSU/KamiSU
+                // Blok: Learn KamiSU (links to KamiSU repo)
                 Column(
                     modifier = Modifier
                         .weight(1f)
-                        .clickable { uriHandler.openUri("https://kernelsu.org/") }
+                        .clickable { uriHandler.openUri("https://github.com/kaminarich/KamiSU") }
                         .padding(16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
@@ -328,3 +478,60 @@ fun UnifiedInfoGrid(
         }
     }
 }
+
+@Composable
+fun SomethingWrongCard() {
+    val uriHandler = LocalUriHandler.current
+
+    ElevatedCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(1.dp)
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 16.dp)
+        ) {
+            Text(
+                text = stringResource(id = R.string.home_something_wrong),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = stringResource(id = R.string.home_something_wrong_content),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.outline
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
+            ) {
+                IconButton(onClick = { uriHandler.openUri("https://github.com/kaminarich") }) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_github),
+                        contentDescription = "GitHub",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(4.dp))
+                IconButton(onClick = { uriHandler.openUri("https://t.me/kaminarivh") }) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_telegram),
+                        contentDescription = "Telegram",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
