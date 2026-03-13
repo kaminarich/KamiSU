@@ -1,4 +1,4 @@
-package com.vortexsu.vortexsu.ui.screen
+package qkxnci.jqxwba.pwwoba.ui.screen
 
 import android.content.Intent
 import android.net.Uri
@@ -8,14 +8,53 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.HorizontalDivider
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.VerticalDivider
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.calculateBottomPadding
+import androidx.compose.foundation.layout.calculateTopPadding
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Memory
+import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.PhoneAndroid
+import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.Verified
+import androidx.compose.material3.Button
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -45,27 +84,20 @@ import com.ramcosta.composedestinations.generated.destinations.InstallScreenDest
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import com.vortexsu.vortexsu.BuildConfig
-import com.vortexsu.vortexsu.Natives
-import com.vortexsu.vortexsu.R
-import com.vortexsu.vortexsu.getKernelVersion
-import com.vortexsu.vortexsu.ui.component.RebootDropdownItems
-import com.vortexsu.vortexsu.ui.util.getHeaderImage
-import com.vortexsu.vortexsu.ui.util.getSuSFSStatus
-import com.vortexsu.vortexsu.ui.util.getSuSFSVersion
-import com.vortexsu.vortexsu.ui.util.reboot
-import com.vortexsu.vortexsu.ui.util.saveHeaderImage
-import java.io.File
+import qkxnci.jqxwba.pwwoba.BuildConfig
+import qkxnci.jqxwba.pwwoba.Natives
+import qkxnci.jqxwba.pwwoba.R
+import qkxnci.jqxwba.pwwoba.getKernelVersion
+import qkxnci.jqxwba.pwwoba.ui.component.RebootDropdownItems
+import qkxnci.jqxwba.pwwoba.ui.util.getHeaderImage
+import qkxnci.jqxwba.pwwoba.ui.util.getSuSFSStatus
+import qkxnci.jqxwba.pwwoba.ui.util.getSuSFSVersion
+import qkxnci.jqxwba.pwwoba.ui.util.reboot
+import qkxnci.jqxwba.pwwoba.ui.util.saveHeaderImage
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-/**
- * Custom shape that clips the banner with concave (inward-curving) bottom corners.
- * Both side walls extend to full height. Each bottom corner scoops inward — the arc
- * departs vertically from the full-height wall, curves inward, and arrives horizontally
- * at the flat center shelf at (height - cornerRadius).
- */
 private class ConcaveBottomShape(private val cornerRadiusDp: Dp) : Shape {
     override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline {
         val r = with(density) { cornerRadiusDp.toPx() }
@@ -382,13 +414,11 @@ fun UnifiedInfoGrid(
         )
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
-
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(IntrinsicSize.Min)
             ) {
-
                 Column(
                     modifier = Modifier
                         .weight(1f)
@@ -454,7 +484,6 @@ fun UnifiedInfoGrid(
                     .fillMaxWidth()
                     .height(IntrinsicSize.Min)
             ) {
-
                 Column(
                     modifier = Modifier
                         .weight(1f)
