@@ -37,7 +37,12 @@ private fun getKsuDaemonPath(): String {
 }
 
 data class FlashResult(val code: Int, val err: String, val showReboot: Boolean) {
-    constructor(result: Shell.Result, showReboot: Boolean) : this(result.code, result.err.joinToString("\n"), showReboot)
+    constructor(result: Shell.Result, showReboot: Boolean) : this(
+        result.code,
+        result.err.joinToString("\n"),
+        showReboot
+    )
+
     constructor(result: Shell.Result) : this(result, result.isSuccess)
 }
 
@@ -108,14 +113,20 @@ fun execKsud(args: String, newShell: Boolean = false): Boolean {
 suspend fun getFeatureStatus(feature: String): String = withContext(Dispatchers.IO) {
     val shell = getRootShell()
     val out = shell.newJob()
-        .add("${getKsuDaemonPath()} feature check $feature").to(ArrayList<String>(), null).exec().out
+        .add("${getKsuDaemonPath()} feature check $feature")
+        .to(ArrayList<String>(), null)
+        .exec()
+        .out
     out.firstOrNull()?.trim().orEmpty()
 }
 
 suspend fun getFeaturePersistValue(feature: String): Long? = withContext(Dispatchers.IO) {
     val shell = getRootShell()
     val out = shell.newJob()
-        .add("${getKsuDaemonPath()} feature get --config $feature").to(ArrayList<String>(), null).exec().out
+        .add("${getKsuDaemonPath()} feature get --config $feature")
+        .to(ArrayList<String>(), null)
+        .exec()
+        .out
     val valueLine = out.firstOrNull { it.trim().startsWith("Value:") } ?: return@withContext null
     valueLine.substringAfter("Value:").trim().toLongOrNull()
 }
@@ -131,7 +142,10 @@ fun listModules(): String {
     val shell = getRootShell()
 
     val out = shell.newJob()
-        .add("${getKsuDaemonPath()} module list").to(ArrayList(), null).exec().out
+        .add("${getKsuDaemonPath()} module list")
+        .to(ArrayList(), null)
+        .exec()
+        .out
     return out.joinToString("\n").ifBlank { "[]" }
 }
 
@@ -174,18 +188,17 @@ fun uninstallModule(id: String): Boolean {
 
 private fun processUiPrintLine(s: String?): Pair<Int, String?> {
     if (s == null) {
-        return Pair(1,null)
+        return Pair(1, null)
     }
 
     val check1 = s.startsWith("ui_print")
     val trimmed = s.trim()
     val check2 = trimmed.startsWith("ui_print")
-    if (!check1 && check2) return Pair(1,null)
+    if (!check1 && check2) return Pair(1, null)
 
-    return if(check1) {
-        Pair(1,trimmed.drop(8).dropWhile { it.isWhitespace() })
-    }
-    else {
+    return if (check1) {
+        Pair(1, trimmed.drop(8).dropWhile { it.isWhitespace() })
+    } else {
         Pair(2, trimmed)
     }
 }
@@ -199,7 +212,7 @@ private fun flashWithIoAk3(
     val stdoutCallback: CallbackList<String?> = object : CallbackList<String?>() {
         override fun onAddElement(s: String?) {
             val (type, text) = processUiPrintLine(s)
-            if(type == 1) {
+            if (type == 1) {
                 text?.let(onStdout)
             } else {
                 text?.let(onStderr)
@@ -263,7 +276,9 @@ fun flashModule(
 }
 
 fun runModuleAction(
-    moduleId: String, onStdout: (String) -> Unit, onStderr: (String) -> Unit
+    moduleId: String,
+    onStdout: (String) -> Unit,
+    onStderr: (String) -> Unit
 ): Boolean {
     val shell = createRootShell(true)
 
@@ -280,25 +295,36 @@ fun runModuleAction(
     }
 
     val result = shell.newJob().add("${getKsuDaemonPath()} module action $moduleId")
-        .to(stdoutCallback, stderrCallback).exec()
+        .to(stdoutCallback, stderrCallback)
+        .exec()
     Log.i("KernelSU", "Module runAction result: $result")
 
     return result.isSuccess
 }
 
 fun restoreBoot(
-    onStdout: (String) -> Unit, onStderr: (String) -> Unit
+    onStdout: (String) -> Unit,
+    onStderr: (String) -> Unit
 ): FlashResult {
     val magiskboot = File(ksuApp.applicationInfo.nativeLibraryDir, "libmagiskboot.so")
-    val result = flashWithIO("${getKsuDaemonPath()} boot-restore -f --magiskboot $magiskboot", onStdout, onStderr)
+    val result = flashWithIO(
+        "${getKsuDaemonPath()} boot-restore -f --magiskboot $magiskboot",
+        onStdout,
+        onStderr
+    )
     return FlashResult(result)
 }
 
 fun uninstallPermanently(
-    onStdout: (String) -> Unit, onStderr: (String) -> Unit
+    onStdout: (String) -> Unit,
+    onStderr: (String) -> Unit
 ): FlashResult {
     val magiskboot = File(ksuApp.applicationInfo.nativeLibraryDir, "libmagiskboot.so")
-    val result = flashWithIO("${getKsuDaemonPath()} uninstall --magiskboot $magiskboot", onStdout, onStderr)
+    val result = flashWithIO(
+        "${getKsuDaemonPath()} uninstall --magiskboot $magiskboot",
+        onStdout,
+        onStderr
+    )
     return FlashResult(result)
 }
 
@@ -336,7 +362,6 @@ fun installBoot(
     var cmd = "boot-patch --magiskboot ${magiskboot.absolutePath}"
 
     cmd += if (bootFile == null) {
-        // no boot.img, use -f to force install
         " -f"
     } else {
         " -b ${bootFile.absolutePath}"
@@ -377,7 +402,6 @@ fun installBoot(
         }
     }
 
-    // output dir
     val downloadsDir =
         Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
     cmd += " -o $downloadsDir"
@@ -392,10 +416,9 @@ fun installBoot(
     bootFile?.delete()
     lkmFile?.delete()
 
-    // if boot uri is empty, it is direct install, when success, we should show reboot button
-    val showReboot = bootUri == null && result.isSuccess // we create a temporary val here, to avoid calc showReboot double
-    if (showReboot) { // because we decide do not update ksud when startActivity
-        install() // install ksud here
+    val showReboot = bootUri == null && result.isSuccess
+    if (showReboot) {
+        install()
     }
     return FlashResult(result, showReboot)
 }
@@ -403,7 +426,6 @@ fun installBoot(
 fun reboot(reason: String = "") {
     val shell = getRootShell()
     if (reason == "recovery") {
-        // KEYCODE_POWER = 26, hide incorrect "Factory data reset" message
         ShellUtils.fastCmd(shell, "/system/bin/input keyevent 26")
     }
     ShellUtils.fastCmd(shell, "/system/bin/svc power reboot $reason || /system/bin/reboot $reason")
@@ -453,7 +475,8 @@ fun flashAnyKernelZip(
                     sh.newJob().add("rm -rf '$destDir' '$destZip'").exec()
                 }
             }
-        } catch (_: Throwable) { }
+        } catch (_: Throwable) {
+        }
     }
 }
 
@@ -555,22 +578,6 @@ fun getAppProfileTemplate(id: String): String {
         .to(ArrayList(), null).exec().out.joinToString("\n")
 }
 
-fun getSuSFSStatus(): String {
-    val shell = getRootShell()
-    return ShellUtils.fastCmd(shell, "${getKsuDaemonPath()} susfs status").trim()
-}
-
-fun getSuSFSVersion(): String {
-    val shell = getRootShell()
-    return ShellUtils.fastCmd(shell, "${getKsuDaemonPath()} susfs version").trim()
-}
-
-fun getSuSFSFeatures(): String {
-    val shell = getRootShell()
-    val cmd = "${getKsuDaemonPath()} susfs features"
-    return shell.newJob().add(cmd).to(ArrayList(), null).exec().out.joinToString("\n").trim()
-}
-
 fun setAppProfileTemplate(id: String, template: String): Boolean {
     val shell = getRootShell()
     val escapedTemplate = template.replace("\"", "\\\"")
@@ -605,7 +612,7 @@ fun restartApp(packageName: String) {
     launchApp(packageName)
 }
 
-fun isWebuiModuleInstalled(modId: String) : Boolean {
+fun isWebuiModuleInstalled(modId: String): Boolean {
     val shell = getRootShell()
     val result = shell.newJob().add("test -d /data/adb/modules/$modId/webroot").exec()
     return result.isSuccess
