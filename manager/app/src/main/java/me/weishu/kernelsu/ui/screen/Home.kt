@@ -1,4 +1,4 @@
-package me.weishu.kernelsu.ui.screen
+package com.vortexsu.vortexsu.ui.screen
 
 import android.content.Intent
 import android.net.Uri
@@ -45,17 +45,16 @@ import com.ramcosta.composedestinations.generated.destinations.InstallScreenDest
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import me.weishu.kernelsu.BuildConfig
-import me.weishu.kernelsu.Natives
-import me.weishu.kernelsu.R
-import me.weishu.kernelsu.getKernelVersion
-import me.weishu.kernelsu.ui.component.RebootDropdownItems
-import me.weishu.kernelsu.ui.util.getHeaderImage
-import me.weishu.kernelsu.ui.util.getSuSFS
-import me.weishu.kernelsu.ui.util.getSuSFSVariant
-import me.weishu.kernelsu.ui.util.getSuSFSVersion
-import me.weishu.kernelsu.ui.util.reboot
-import me.weishu.kernelsu.ui.util.saveHeaderImage
+import com.vortexsu.vortexsu.BuildConfig
+import com.vortexsu.vortexsu.Natives
+import com.vortexsu.vortexsu.R
+import com.vortexsu.vortexsu.getKernelVersion
+import com.vortexsu.vortexsu.ui.component.RebootDropdownItems
+import com.vortexsu.vortexsu.ui.util.getHeaderImage
+import com.vortexsu.vortexsu.ui.util.getSuSFSStatus
+import com.vortexsu.vortexsu.ui.util.getSuSFSVersion
+import com.vortexsu.vortexsu.ui.util.reboot
+import com.vortexsu.vortexsu.ui.util.saveHeaderImage
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -187,7 +186,6 @@ fun HomeBanner(ksuVersion: Int?, navigator: DestinationsNavigator) {
             )
         }
 
-        // Tombol tiga titik tetap kanan atas
         Box(
             modifier = Modifier
                 .align(Alignment.TopEnd)
@@ -220,7 +218,6 @@ fun HomeBanner(ksuVersion: Int?, navigator: DestinationsNavigator) {
             }
         }
 
-        // Judul + status/tanggal pindah ke kiri bawah, tidak mentok bawah
         Column(
             modifier = Modifier
                 .align(Alignment.BottomStart)
@@ -261,13 +258,12 @@ fun SusfsVersionCard() {
     val susfsStatus by produceState(initialValue = notFoundText) {
         value = withContext(Dispatchers.IO) {
             try {
-                val support = getSuSFS().trim()
-                if (support.equals("Supported", ignoreCase = true)) {
+                val status = getSuSFSStatus().trim()
+                if (status.equals("Supported", ignoreCase = true)) {
                     val version = getSuSFSVersion().trim().ifBlank { "-" }
-                    val variant = getSuSFSVariant().trim().ifBlank { "-" }
-                    "Supported | $version ($variant)"
+                    "Supported | $version"
                 } else {
-                    support.ifBlank { notFoundText }
+                    status.ifBlank { notFoundText }
                 }
             } catch (e: Exception) {
                 notFoundText
