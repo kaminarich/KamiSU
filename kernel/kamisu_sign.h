@@ -14,6 +14,6 @@
 // kaminarich/KamiSU
 #define EXPECTED_SIZE_KAMISU 0x2e8
 #define EXPECTED_HASH_KAMISU \
-    "590bdbbdd0e7f9f137da28b9fa99173259cfc81d4ad1601046205c5ca805835c"
+    "c282f807aaaf64d37293f4bd6112e9e4b1c1165460cb94db1763fca2935fc329"
 
 #endif /* __KSU_H_KAMISU_SIGN */
