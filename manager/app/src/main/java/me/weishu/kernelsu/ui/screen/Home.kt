@@ -43,18 +43,15 @@ import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.destinations.InstallScreenDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import me.weishu.kernelsu.BuildConfig
 import me.weishu.kernelsu.Natives
 import me.weishu.kernelsu.R
 import me.weishu.kernelsu.getKernelVersion
 import me.weishu.kernelsu.ui.component.RebootDropdownItems
 import me.weishu.kernelsu.ui.util.getHeaderImage
-import me.weishu.kernelsu.ui.util.getSuSFSStatus
-import me.weishu.kernelsu.ui.util.getSuSFSVersion
 import me.weishu.kernelsu.ui.util.reboot
 import me.weishu.kernelsu.ui.util.saveHeaderImage
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -71,13 +68,9 @@ private class ConcaveBottomShape(private val cornerRadiusDp: Dp) : Shape {
         val path = Path().apply {
             moveTo(0f, 0f)
             lineTo(size.width, 0f)
-            // Right wall descends all the way to the full bottom edge
             lineTo(size.width, size.height)
-            // Concave right corner
             quadraticBezierTo(size.width, size.height - r, size.width - r, size.height - r)
-            // Flat bottom center shelf
             lineTo(r, size.height - r)
-            // Concave left corner
             quadraticBezierTo(0f, size.height - r, 0f, size.height)
             close()
         }
@@ -109,7 +102,6 @@ fun HomeScreen(navigator: DestinationsNavigator) {
         ) {
             HomeBanner(ksuVersion = ksuVersion, navigator = navigator)
             StatusSection(ksuVersion = ksuVersion, navigator = navigator)
-            SusfsVersionCard()
 
             UnifiedInfoGrid(
                 kernelVersionString = kernelVersionString,
@@ -189,7 +181,6 @@ fun HomeBanner(ksuVersion: Int?, navigator: DestinationsNavigator) {
             )
         }
 
-        // Tombol tiga titik tetap kanan atas
         Box(
             modifier = Modifier
                 .align(Alignment.TopEnd)
@@ -222,7 +213,6 @@ fun HomeBanner(ksuVersion: Int?, navigator: DestinationsNavigator) {
             }
         }
 
-        // Judul + status/tanggal pindah ke kiri bawah, tidak mentok bawah
         Column(
             modifier = Modifier
                 .align(Alignment.BottomStart)
@@ -257,65 +247,6 @@ fun HomeBanner(ksuVersion: Int?, navigator: DestinationsNavigator) {
 }
 
 @Composable
-fun SusfsVersionCard() {
-    val notFoundText = stringResource(id = R.string.home_susfs_not_found)
-
-    val susfsStatus by produceState(initialValue = notFoundText) {
-        value = withContext(Dispatchers.IO) {
-            try {
-                val status = getSuSFSStatus().trim()
-                if (status.equals("Supported", ignoreCase = true)) {
-                    val version = getSuSFSVersion().trim().ifBlank { "-" }
-                    "Supported | $version"
-                } else {
-                    status.ifBlank { notFoundText }
-                }
-            } catch (e: Exception) {
-                notFoundText
-            }
-        }
-    }
-
-    ElevatedCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(2.dp)
-        )
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Filled.Security,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(24.dp)
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(
-                    text = stringResource(id = R.string.home_susfs_version),
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
-            Text(
-                text = susfsStatus,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.outline
-            )
-        }
-    }
-}
-
-@Composable
 fun StatusSection(ksuVersion: Int?, navigator: DestinationsNavigator) {
     if (ksuVersion != null) {
         ElevatedCard(
@@ -328,8 +259,11 @@ fun StatusSection(ksuVersion: Int?, navigator: DestinationsNavigator) {
             shape = RoundedCornerShape(16.dp)
         ) {
             Row(
-                modifier = Modifier.padding(20.dp),
-                verticalAlignment = Alignment.CenterVertically
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
             ) {
                 Icon(
                     imageVector = Icons.Filled.Verified,
